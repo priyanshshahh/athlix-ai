@@ -1,0 +1,16 @@
+{
+  "title": "ATHLIX AI",
+  "description": "AI-powered financial intelligence terminal for professional athletes. Predicts injury-linked earning decline, career instability, and retirement collapse risk using interactive simulations and AI-driven analysis.",
+  "displayName": "Priyansh Shah",
+  "videoUrl": "LOOM_LINK_HERE",
+  "repoUrl": "https://github.com/priyanshshahh/athlix-ai",
+  "deployedUrl": "https://athlix-ai.vercel.app",
+  "tags": [
+    "sports",
+    "finance",
+    "ai",
+    "machine-learning",
+    "nextjs",
+    "recharts"
+  ]
+}

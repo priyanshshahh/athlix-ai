@@ -1,0 +1,168 @@
+"use client";
+
+import * as React from "react";
+import { useRouter } from "next/navigation";
+import { motion, AnimatePresence } from "framer-motion";
+import { Search, Sparkles, ArrowRight } from "lucide-react";
+import { PLAYERS, SUGGESTED_SLUGS } from "@/data/players";
+import { slugify } from "@/lib/utils";
+
+const SUGGESTED = SUGGESTED_SLUGS.map((s) => PLAYERS.find((p) => p.slug === s)!).filter(
+  Boolean,
+);
+
+export function AthleteSearch() {
+  const router = useRouter();
+  const [value, setValue] = React.useState("");
+  const [focused, setFocused] = React.useState(false);
+  const [submitting, setSubmitting] = React.useState(false);
+
+  const filtered = React.useMemo(() => {
+    const q = value.trim().toLowerCase();
+    if (!q) return SUGGESTED;
+    return PLAYERS.filter((p) =>
+      p.name.toLowerCase().includes(q) || p.team.toLowerCase().includes(q),
+    );
+  }, [value]);
+
+  const submit = (slug?: string) => {
+    const target =
+      slug ??
+      (filtered[0]?.slug ?? (value.trim() ? slugify(value) : "zion-williamson"));
+    setSubmitting(true);
+    router.push(`/dashboard/${target}`);
+  };
+
+  return (
+    <div className="relative w-full max-w-3xl">
+      <motion.div
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.3, duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+        className={`relative glass-card-strong overflow-hidden ${
+          focused ? "neon-border-cyan" : "border-white/10"
+        }`}
+      >
+        <div className="pointer-events-none absolute inset-0 grid-overlay-fine opacity-50" />
+        <div className="pointer-events-none absolute -inset-px rounded-[22px] animate-shimmer opacity-60" />
+
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            submit();
+          }}
+          className="relative flex items-center gap-3 px-5 py-4"
+        >
+          <Search className="h-5 w-5 text-cyan-300" />
+          <input
+            value={value}
+            onChange={(e) => setValue(e.target.value)}
+            onFocus={() => setFocused(true)}
+            onBlur={() => setTimeout(() => setFocused(false), 120)}
+            placeholder="Query athlete · e.g. Zion Williamson"
+            className="flex-1 bg-transparent text-lg font-mono tracking-wide text-slate-100 placeholder:text-slate-500 focus:outline-none"
+            aria-label="Search athlete"
+          />
+          <div className="hidden md:flex items-center gap-2 font-mono text-[10px] text-slate-500 uppercase tracking-[0.22em]">
+            <kbd className="rounded border border-white/10 bg-white/[0.04] px-1.5 py-0.5">
+              ⏎
+            </kbd>
+            Analyze
+          </div>
+          <button
+            type="submit"
+            disabled={submitting}
+            className="ml-2 inline-flex items-center gap-2 rounded-lg glow-button px-4 py-2 text-sm disabled:opacity-60"
+          >
+            <Sparkles className="h-4 w-4" />
+            Run Risk Scan
+            <ArrowRight className="h-4 w-4" />
+          </button>
+        </form>
+      </motion.div>
+
+      <AnimatePresence>
+        {focused && (
+          <motion.div
+            initial={{ opacity: 0, y: -6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -6 }}
+            transition={{ duration: 0.2 }}
+            className="absolute z-30 mt-2 w-full glass-card-strong p-2"
+          >
+            <div className="px-3 pt-2 pb-1 font-mono text-[10px] uppercase tracking-[0.28em] text-cyan-300/70 flex items-center justify-between">
+              <span>Indexed Athletes</span>
+              <span className="text-slate-500">{filtered.length} matches</span>
+            </div>
+            <div className="grid gap-1">
+              {filtered.slice(0, 6).map((p) => (
+                <button
+                  key={p.slug}
+                  type="button"
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    submit(p.slug);
+                  }}
+                  className="group flex items-center gap-3 rounded-lg px-3 py-2.5 text-left hover:bg-cyan-400/[0.06] transition"
+                >
+                  <div className="flex h-9 w-9 items-center justify-center rounded-md border border-white/10 bg-gradient-to-br from-cyan-500/20 to-violet-500/20 font-mono text-[11px] text-cyan-200">
+                    {p.teamAbbr}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-slate-100">{p.name}</span>
+                      <span className="font-mono text-[10px] text-slate-500">
+                        {p.position} · {p.jersey}
+                      </span>
+                    </div>
+                    <div className="font-mono text-[10px] text-slate-500 uppercase tracking-[0.18em] truncate">
+                      {p.team} · stability {p.stabilityScore}/100
+                    </div>
+                  </div>
+                  <RiskPill tier={p.riskTier} />
+                  <ArrowRight className="h-4 w-4 text-slate-500 group-hover:text-cyan-300 transition" />
+                </button>
+              ))}
+              {filtered.length === 0 && (
+                <button
+                  type="button"
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    submit();
+                  }}
+                  className="flex items-center gap-3 rounded-lg px-3 py-3 hover:bg-cyan-400/[0.06]"
+                >
+                  <Sparkles className="h-4 w-4 text-cyan-300" />
+                  <span className="text-sm text-slate-200">
+                    Run live ATHLIX scan for{" "}
+                    <span className="text-cyan-200 font-mono">
+                      &quot;{value || "athlete"}&quot;
+                    </span>
+                  </span>
+                </button>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+function RiskPill({ tier }: { tier: string }) {
+  const color =
+    tier === "CRITICAL"
+      ? "text-rose-200 border-rose-400/40 bg-rose-400/10"
+      : tier === "VOLATILE"
+      ? "text-amber-200 border-amber-400/40 bg-amber-400/10"
+      : tier === "ELEVATED"
+      ? "text-cyan-200 border-cyan-400/40 bg-cyan-400/10"
+      : "text-emerald-200 border-emerald-400/40 bg-emerald-400/10";
+  return (
+    <span
+      className={`rounded-md border px-2 py-0.5 font-mono text-[9px] uppercase tracking-[0.22em] ${color}`}
+    >
+      {tier}
+    </span>
+  );
+}
