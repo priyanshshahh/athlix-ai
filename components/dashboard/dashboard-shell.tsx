@@ -20,9 +20,11 @@ import {
   defaultInputsFor,
   simulate,
   type SimulatorInputs,
-} from "@/lib/mock-engine";
+} from "@/lib/scenario-engine";
 import type { PlayerProfile } from "@/data/players";
+import type { LiveStats } from "@/lib/live-stats";
 import { PlayerHero } from "@/components/dashboard/player-hero";
+import { LiveStatsCard } from "@/components/dashboard/live-stats-card";
 import { StabilityScore } from "@/components/dashboard/stability-score";
 import { RiskDialCard } from "@/components/dashboard/risk-dial-card";
 import { Simulator } from "@/components/dashboard/simulator";
@@ -32,17 +34,17 @@ import { ChatPanel } from "@/components/ai/chat-panel";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { formatCurrency } from "@/lib/utils";
 
-export function DashboardShell({ player }: { player: PlayerProfile }) {
-  const defaults = React.useMemo(
-    () => defaultInputsFor(player.slug),
-    [player.slug],
-  );
+export function DashboardShell({
+  player,
+  live = null,
+}: {
+  player: PlayerProfile;
+  live?: LiveStats | null;
+}) {
+  const defaults = React.useMemo(() => defaultInputsFor(player), [player]);
   const [inputs, setInputs] = React.useState<SimulatorInputs>(defaults);
 
-  const sim = React.useMemo(
-    () => simulate(player.slug, inputs),
-    [player.slug, inputs],
-  );
+  const sim = React.useMemo(() => simulate(player, inputs), [player, inputs]);
 
   const aiContext = React.useMemo(
     () =>
@@ -68,7 +70,14 @@ export function DashboardShell({ player }: { player: PlayerProfile }) {
           </span>
           <span className="ml-auto flex items-center gap-2 font-mono text-[10px] text-slate-500">
             <span className="status-dot" />
-            ENGINE ONLINE · 18ms latency · feed=BALLDONTLIE
+            {live ? "LIVE FEED · BALLDONTLIE" : "SCENARIO MODE · SIM ONLY"}
+            <span className="h-3 w-px bg-white/10" />
+            <Link
+              href="/methodology"
+              className="text-slate-400 underline-offset-2 hover:text-cyan-200 hover:underline"
+            >
+              Methodology
+            </Link>
           </span>
         </div>
       </div>
@@ -303,6 +312,8 @@ export function DashboardShell({ player }: { player: PlayerProfile }) {
             transition={{ delay: 0.15, duration: 0.5 }}
             className="space-y-4"
           >
+            <LiveStatsCard live={live} />
+
             <Simulator inputs={inputs} setInputs={setInputs} defaults={defaults} />
 
             <div className="glass-card relative overflow-hidden">
@@ -405,7 +416,7 @@ export function DashboardShell({ player }: { player: PlayerProfile }) {
                   <span className="text-base text-slate-400">th</span>
                 </span>
                 <span className="font-mono text-[10px] uppercase tracking-[0.22em] text-slate-400">
-                  vs. 1,432 athlete arcs
+                  vs. synthetic cohort curve
                 </span>
               </div>
               <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-white/[0.05]">

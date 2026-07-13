@@ -8,7 +8,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { simulate, defaultInputsFor } from "@/lib/mock-engine";
+import { simulate, defaultInputsFor } from "@/lib/scenario-engine";
 import { ShieldAlert, Activity, Skull } from "lucide-react";
 
 const sim = simulate("zion-williamson", defaultInputsFor("zion-williamson"));

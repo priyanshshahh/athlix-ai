@@ -12,7 +12,7 @@ import {
   Legend,
 } from "recharts";
 import { RiskTooltip } from "./risk-tooltip";
-import type { WealthPoint } from "@/lib/mock-engine";
+import type { WealthPoint } from "@/lib/scenario-engine";
 
 export function WealthChart({
   data,

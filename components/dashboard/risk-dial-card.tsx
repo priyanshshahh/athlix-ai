@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import type { RiskDial } from "@/lib/mock-engine";
+import type { RiskDial } from "@/lib/scenario-engine";
 
 const TIER_COLORS: Record<RiskDial["tier"], { bar: string; text: string; border: string }> = {
   STABLE: {

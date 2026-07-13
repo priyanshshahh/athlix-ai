@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
-import type { SimulatorInputs } from "@/lib/mock-engine";
+import type { SimulatorInputs } from "@/lib/scenario-engine";
 
 const PRESETS: Array<{
   id: string;

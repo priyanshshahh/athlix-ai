@@ -15,6 +15,13 @@ export type PlayerProfile = {
   endorsementsUsd: number;
   injurySeverity: number;
   contractDurationYrs: number;
+  /**
+   * Analyst-set scenario assumption (0–100) for off-court/behavioral risk.
+   * This is an editorial input to the deterministic simulator, not a
+   * measured statistic. The engine reads this attribute — player names are
+   * never special-cased.
+   */
+  behavioralRiskIndex: number;
   riskTier: "STABLE" | "ELEVATED" | "VOLATILE" | "CRITICAL";
   riskColor: "emerald" | "cyan" | "amber" | "rose";
   stabilityScore: number;
@@ -41,6 +48,7 @@ export const PLAYERS: PlayerProfile[] = [
     endorsementsUsd: 16_400_000,
     injurySeverity: 78,
     contractDurationYrs: 4,
+    behavioralRiskIndex: 30,
     riskTier: "CRITICAL",
     riskColor: "rose",
     stabilityScore: 41,
@@ -70,6 +78,7 @@ export const PLAYERS: PlayerProfile[] = [
     endorsementsUsd: 21_800_000,
     injurySeverity: 54,
     contractDurationYrs: 3,
+    behavioralRiskIndex: 74,
     riskTier: "VOLATILE",
     riskColor: "amber",
     stabilityScore: 58,
@@ -99,6 +108,7 @@ export const PLAYERS: PlayerProfile[] = [
     endorsementsUsd: 4_900_000,
     injurySeverity: 86,
     contractDurationYrs: 1,
+    behavioralRiskIndex: 40,
     riskTier: "CRITICAL",
     riskColor: "rose",
     stabilityScore: 28,
@@ -128,6 +138,7 @@ export const PLAYERS: PlayerProfile[] = [
     endorsementsUsd: 3_100_000,
     injurySeverity: 72,
     contractDurationYrs: 1,
+    behavioralRiskIndex: 22,
     riskTier: "VOLATILE",
     riskColor: "amber",
     stabilityScore: 49,
@@ -157,6 +168,7 @@ export const PLAYERS: PlayerProfile[] = [
     endorsementsUsd: 11_200_000,
     injurySeverity: 61,
     contractDurationYrs: 3,
+    behavioralRiskIndex: 24,
     riskTier: "VOLATILE",
     riskColor: "amber",
     stabilityScore: 55,

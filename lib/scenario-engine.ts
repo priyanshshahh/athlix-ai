@@ -1,5 +1,15 @@
 import { clamp } from "./utils";
-import { getPlayerBySlug, type PlayerProfile } from "@/data/players";
+
+/**
+ * Deterministic scenario simulator.
+ *
+ * This is NOT a predictive ML model and does not forecast real outcomes.
+ * It maps four user-controlled inputs (age, injury severity, contract
+ * duration, salary exposure) plus a handful of profile attributes through
+ * fixed, documented formulas to produce an internally-consistent risk
+ * readout. Same inputs always produce the same outputs. See /methodology
+ * and README for the exact formula weights and their limitations.
+ */
 
 export type RiskDial = {
   label: string;
@@ -29,6 +39,43 @@ export type SimulatorInputs = {
   salaryExposure: number;
 };
 
+/**
+ * The attributes the simulator reads from a player profile. For curated
+ * profiles these are hand-set analyst assumptions; for live-searched players
+ * they fall back to documented defaults the user can adjust via sliders.
+ */
+export type ScenarioProfile = {
+  name: string;
+  stabilityScore: number;
+  injurySeverity: number;
+  baseSalaryUsd: number;
+  endorsementsUsd: number;
+  estContractValueUsd: number;
+  ageYears: number;
+  contractDurationYrs: number;
+  /**
+   * 0–100 scenario assumption for off-court/behavioral risk. Set per curated
+   * profile (documented in data/players.ts); defaults to the cohort-neutral
+   * 32 for everyone else. Derived from the profile attribute — never from
+   * the player's name.
+   */
+  behavioralRiskIndex: number;
+  flashFlags: string[];
+};
+
+export const DEFAULT_SCENARIO_PROFILE: ScenarioProfile = {
+  name: "Unknown Player",
+  stabilityScore: 60,
+  injurySeverity: 50,
+  baseSalaryUsd: 25_000_000,
+  endorsementsUsd: 4_000_000,
+  estContractValueUsd: 120_000_000,
+  ageYears: 26,
+  contractDurationYrs: 3,
+  behavioralRiskIndex: 32,
+  flashFlags: [],
+};
+
 export type SimulationOutput = {
   stabilityScore: number;
   collapseProb: number;
@@ -50,36 +97,17 @@ const tierFromScore = (score: number): RiskDial["tier"] => {
   return "STABLE";
 };
 
-/**
- * Deterministic mock intelligence engine.
- * Inputs map to a believable wealth trajectory and risk profile.
- */
 export function simulate(
-  playerSlug: string,
+  profile: Partial<ScenarioProfile>,
   inputs: SimulatorInputs,
 ): SimulationOutput {
-  const player =
-    getPlayerBySlug(playerSlug) ??
-    ({
-      ...({} as PlayerProfile),
-      slug: playerSlug,
-      name: playerSlug,
-      stabilityScore: 60,
-      injurySeverity: 50,
-      ageYears: inputs.age,
-      contractDurationYrs: inputs.contractDurationYrs,
-      baseSalaryUsd: 25_000_000,
-      endorsementsUsd: 4_000_000,
-      guaranteedUsd: 60_000_000,
-      estContractValueUsd: 120_000_000,
-      flashFlags: [],
-      thesis: "",
-    } as PlayerProfile);
+  const player: ScenarioProfile = { ...DEFAULT_SCENARIO_PROFILE, ...profile };
 
   const baseAge = inputs.age;
   const inj = inputs.injurySeverity / 100;
   const dur = inputs.contractDurationYrs;
   const sal = inputs.salaryExposure / 100;
+  const bri = clamp(player.behavioralRiskIndex, 0, 100);
 
   // Composite stability score (0-100, higher = more stable)
   const ageFactor = 1 - clamp((baseAge - 22) / 18, 0, 1) * 0.55;
@@ -166,38 +194,31 @@ export function simulate(
     98,
   );
 
+  const behavioralValue = Math.round(
+    clamp(bri + sal * 14 - (stabilityScore - 60) * 0.4, 5, 96),
+  );
+
   // Dials
   const dials: RiskDial[] = [
     {
       label: "Career Stability",
       value: stabilityScore,
-      delta: stabilityScore - (player.stabilityScore ?? 60),
+      delta: stabilityScore - player.stabilityScore,
       tier: tierFromScore(stabilityScore),
     },
     {
       label: "Injury Risk",
       value: Math.round(clamp(inj * 100 + (baseAge - 25) * 1.3, 4, 98)),
-      delta: Math.round((inj * 100 - (player.injurySeverity ?? 50)) * 0.5),
+      delta: Math.round((inj * 100 - player.injurySeverity) * 0.5),
       tier: tierFromScore(
         100 - clamp(inj * 100 + (baseAge - 25) * 1.3, 4, 98),
       ),
     },
     {
       label: "Behavioral Volatility",
-      value: Math.round(
-        clamp(
-          (player.name?.toLowerCase().includes("morant") ? 78 : 32) +
-            sal * 14 -
-            (stabilityScore - 60) * 0.4,
-          5,
-          96,
-        ),
-      ),
+      value: behavioralValue,
       delta: Math.round(sal * 8 - 4),
-      tier:
-        player.name?.toLowerCase().includes("morant")
-          ? "VOLATILE"
-          : tierFromScore(stabilityScore + 8),
+      tier: bri >= 65 ? "VOLATILE" : tierFromScore(stabilityScore + 8),
     },
     {
       label: "Earning Compression",
@@ -244,13 +265,7 @@ export function simulate(
     },
     {
       category: "Behavioral exposure",
-      exposure: Math.round(
-        clamp(
-          (player.name?.toLowerCase().includes("morant") ? 72 : 28) + sal * 12,
-          6,
-          92,
-        ),
-      ),
+      exposure: Math.round(clamp(bri * 0.95 + sal * 12, 6, 92)),
       baseline: 30,
     },
     {
@@ -269,43 +284,43 @@ export function simulate(
   const insights: string[] = [];
   if (stabilityScore < 35) {
     insights.push(
-      `Career stability rated CRITICAL (${stabilityScore}/100). Compounded injury frequency forecast accelerating wealth decay.`,
+      `Career stability rated CRITICAL (${stabilityScore}/100) under current scenario inputs. Simulated injury load accelerates wealth decay.`,
     );
   } else if (stabilityScore < 55) {
     insights.push(
-      `Stability profile VOLATILE (${stabilityScore}/100). High-beta wealth trajectory with bifurcated outcomes.`,
+      `Stability profile VOLATILE (${stabilityScore}/100). Scenario yields a high-beta wealth trajectory with bifurcated outcomes.`,
     );
   } else if (stabilityScore < 75) {
     insights.push(
-      `Stability profile ELEVATED (${stabilityScore}/100). Manageable downside but structural inflection points present.`,
+      `Stability profile ELEVATED (${stabilityScore}/100). Manageable downside but structural inflection points present in this scenario.`,
     );
   } else {
     insights.push(
-      `Stability profile STABLE (${stabilityScore}/100). Wealth trajectory tracks cohort top quartile.`,
+      `Stability profile STABLE (${stabilityScore}/100). Simulated wealth trajectory tracks cohort top quartile.`,
     );
   }
 
   if (inj > 0.65) {
     insights.push(
-      `Injury severity at ${Math.round(inj * 100)}% — soft-tissue and lower-body load profile diverging from cohort norms.`,
+      `Injury severity input at ${Math.round(inj * 100)}% — simulated earnings curve diverges sharply from the synthetic cohort baseline.`,
     );
   }
   if (dur < 2) {
     insights.push(
-      `Contract horizon ${dur}yr — re-signing probability degraded, endorsement floor likely to recalibrate downward.`,
+      `Contract horizon ${dur}yr — simulator degrades re-signing assumptions and lowers the endorsement floor.`,
     );
   }
   if (baseAge > 30) {
     insights.push(
-      `Age curve past inflection at ${baseAge}yr — terminal earnings probability rapidly compressing.`,
+      `Age input past the model's inflection at ${baseAge}yr — terminal earnings compress under the fixed decay curve.`,
     );
   }
   insights.push(
-    `Peer cohort percentile: ${cohortPercentile}th. Terminal net worth projection ${(terminalNetWorth / 1_000_000).toFixed(1)}M.`,
+    `Synthetic cohort percentile: ${cohortPercentile}th. Simulated terminal net worth ${(terminalNetWorth / 1_000_000).toFixed(1)}M.`,
   );
 
   // Flash flags
-  const flashFlags = [...(player.flashFlags ?? [])];
+  const flashFlags = [...player.flashFlags];
   if (inj > 0.75) flashFlags.push("Acute injury exposure");
   if (sal > 0.7) flashFlags.push("Salary cap risk");
   if (dur < 2) flashFlags.push("Contract expiry imminent");
@@ -325,20 +340,17 @@ export function simulate(
   };
 }
 
-export function defaultInputsFor(playerSlug: string): SimulatorInputs {
-  const p = getPlayerBySlug(playerSlug);
+export function defaultInputsFor(
+  profile: Partial<ScenarioProfile>,
+): SimulatorInputs {
+  const p: ScenarioProfile = { ...DEFAULT_SCENARIO_PROFILE, ...profile };
   return {
-    age: p?.ageYears ?? 26,
-    injurySeverity: p?.injurySeverity ?? 50,
-    contractDurationYrs: p?.contractDurationYrs ?? 3,
+    age: p.ageYears,
+    injurySeverity: p.injurySeverity,
+    contractDurationYrs: p.contractDurationYrs,
     salaryExposure: Math.min(
       95,
-      Math.round(
-        ((p?.baseSalaryUsd ?? 25_000_000) /
-          (p?.estContractValueUsd ?? 120_000_000)) *
-          100 *
-          4,
-      ),
+      Math.round((p.baseSalaryUsd / p.estContractValueUsd) * 100 * 4),
     ),
   };
 }

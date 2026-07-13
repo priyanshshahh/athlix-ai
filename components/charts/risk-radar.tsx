@@ -9,7 +9,7 @@ import {
   Radar,
   Tooltip,
 } from "recharts";
-import type { RiskBucket } from "@/lib/mock-engine";
+import type { RiskBucket } from "@/lib/scenario-engine";
 
 export function RiskRadar({ buckets }: { buckets: RiskBucket[] }) {
   return (
