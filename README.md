@@ -1,214 +1,129 @@
 # ATHLIX AI
 
-> **The Financial Intelligence Layer For Sports.**
-> AI-powered athlete financial risk forecasting — career collapse, injury-linked
-> earning decline, retirement liquidity failure, and contract instability
-> rendered in one cinematic terminal.
+> **An athlete financial-risk scenario simulator, on real NBA data.**
 
-ATHLIX AI is **not** fantasy sports, betting, or picks. It is a new
-category — the first purpose-built financial-intelligence operating system
-for athlete capital. The tool an agent, financial advisor, or front-office
-risk officer opens every morning to forecast career collapse, contract
-instability, and retirement liquidity in real time.
+ATHLIX is a **scenario simulator**, not a predictive model. You pick a player,
+tune four sliders (age, injury severity, contract duration, salary exposure),
+and a set of **fixed, deterministic formulas** produce a self-consistent risk
+readout — stability score, collapse probability, wealth trajectory, exposure
+buckets, and cohort percentile. Same inputs always produce the same outputs. It
+does **not** forecast real-world outcomes and is **not** financial advice.
 
-![ATHLIX preview](https://placehold.co/1600x800/050816/22d3ee?text=ATHLIX+AI+Terminal)
-
----
-
-## Live demo flow
-
-1. `/` — cinematic landing page with live ticker, athlete search, and a
-   holographic dashboard preview.
-2. Type a name (or click a suggested player) → `/dashboard/[slug]`.
-3. Tweak the **Scenario Simulator** sliders (Age, Injury Severity, Contract
-   Duration, Salary Exposure) → every chart, dial, and exposure bar
-   recomputes in real time.
-4. Launch **ATHLIX Intelligence** (bottom-right) → streaming institutional
-   quant-grade analyst output via OpenRouter + DeepSeek.
+What *is* real: NBA player search, bios, and recent team results come live from
+the [BALLDONTLIE](https://www.balldontlie.io) API, fetched **server-side**. What
+*is* a modeling assumption: every dollar figure and the synthetic cohort
+baseline. The `/methodology` page in the app spells out exactly which is which,
+and prints the formulas.
 
 ---
 
-## Tech stack
+## Verified behavior
 
-| Layer        | Tech                                                                |
-| ------------ | ------------------------------------------------------------------- |
-| Framework    | **Next.js 16** (App Router, Turbopack) + TypeScript                 |
-| Styling      | **Tailwind CSS v4** + custom cinematic design system                |
-| UI           | shadcn-style primitives + **Radix UI** + **Lucide Icons**           |
-| Motion       | **Framer Motion** (page fades, scoring springs, ticker, particles)  |
-| Charts       | **Recharts** (area, radar, custom holographic tooltip)              |
-| AI           | **Vercel AI SDK v6** + `@openrouter/ai-sdk-provider` + **DeepSeek** |
-| Sports data  | **BALLDONTLIE** SDK + REST                                          |
-| Deploy       | **Vercel**                                                          |
+All of the following was exercised end-to-end against the running app on
+2026-07-17 (see [`docs/PROJECT-NOTES.md`](docs/PROJECT-NOTES.md) for the raw
+captures):
+
+- **Live search** — `GET /api/players/search?q=curry` returned real players
+  (Stephen Curry, id 115, Golden State Warriors) from BALLDONTLIE.
+- **Live stats** — the Stephen Curry dashboard server-rendered his real bio
+  (Davidson, Golden State Warriors) and real recent games (April 2026 finals),
+  sourced and timestamped.
+- **Live AI** — `POST /api/chat` streamed a real DeepSeek response via
+  OpenRouter, grounded in the active scenario context.
+- **Graceful degradation** — with no keys, live search returns `503` and the
+  chat serves a **labeled** demo stream; the build still succeeds.
 
 ---
 
-## Project structure
+## Architecture
 
 ```
-athlix/
-├── app/
-│   ├── api/chat/route.ts              # AI SDK v6 stream (OpenRouter / DeepSeek)
-│   ├── dashboard/page.tsx             # Cohort index
-│   ├── dashboard/[player]/page.tsx    # Player risk terminal
-│   ├── layout.tsx                     # Root layout + fonts + metadata
-│   ├── template.tsx                   # Framer Motion page transitions
-│   ├── page.tsx                       # Landing page
-│   └── globals.css                    # Tailwind v4 + cyberpunk design system
-├── components/
-│   ├── landing/                       # Atmosphere, TopBar, Ticker, Search, Preview
-│   ├── dashboard/                     # PlayerHero, StabilityScore, Simulator, Shell
-│   ├── charts/                        # WealthChart, RiskRadar, RiskTooltip
-│   ├── ai/                            # ChatPanel (useChat + DefaultChatTransport)
-│   ├── motion/                        # PageFade
-│   └── ui/                            # Card, Button, Badge, Slider, Tabs, Input, Skeleton
-├── lib/
-│   ├── utils.ts                       # cn(), formatCurrency, clamp, slugify
-│   ├── mock-engine.ts                 # Deterministic risk simulation engine
-│   └── balldontlie.ts                 # BALLDONTLIE REST wrapper
-├── data/
-│   └── players.ts                     # 5 hand-crafted analyst profiles
-├── meta.json                          # Hackathon submission metadata
-└── .env.local                         # Local secrets (gitignored)
+Browser (client components)
+  │  search-as-you-type  ────────►  GET /api/players/search   ─┐
+  │  chat (useChat/SSE)  ────────►  POST /api/chat            ─┤ server-only
+  │                                                            │  (keys never
+  ▼                                                            │   sent to
+Player dashboard (server component, SSR)                       │   the browser)
+  └─ getLiveStats() ───────────────────────────────────────────┘
+        │
+        ├─ lib/balldontlie.ts   → BALLDONTLIE REST (Authorization header)
+        ├─ lib/live-stats.ts    → assembles bio + recent games (or null → offline)
+        ├─ lib/scenario-engine.ts → deterministic simulator (no name special-casing)
+        └─ lib/rate-limit.ts    → in-memory sliding-window limiter (both routes)
 ```
+
+Key design points:
+
+- **Server-side keys only.** `BALLDONTLIE_API_KEY` and `OPENROUTER_API_KEY` are
+  read in route handlers / server components. There is no `NEXT_PUBLIC_*` key —
+  nothing secret is bundled into client JS.
+- **The simulator reads attributes, never names.** A test asserts that two
+  profiles differing only by name produce byte-identical output.
+- **Honest failure.** No key or a failed upstream call yields an explicit
+  offline / demo state, never invented numbers.
+- **Rate limited.** Search 30/min, chat 20/min, per client, with `Retry-After`.
+
+### Tech stack
+
+| Layer       | Tech                                                     |
+| ----------- | -------------------------------------------------------- |
+| Framework   | Next.js 16 (App Router) + TypeScript                     |
+| Styling     | Tailwind CSS v4 + custom design system                   |
+| UI / motion | Radix primitives, Lucide icons, Framer Motion, Recharts  |
+| AI          | Vercel AI SDK v6 + `@openrouter/ai-sdk-provider` (DeepSeek) |
+| Sports data | BALLDONTLIE REST                                          |
+| Validation  | zod (route input)                                        |
+| Tests       | Vitest (38 tests)                                        |
 
 ---
 
-## Local setup
+## Run it (3 commands)
 
 ```bash
-# 1. Install
 npm install
-
-# 2. Configure secrets (already created at .env.local)
-#    OPENROUTER_API_KEY=...
-#    NEXT_PUBLIC_BALLDONTLIE_API_KEY=...
-
-# 3. Dev server
-npm run dev   # → http://localhost:3000
-
-# 4. Production build
-npm run build && npm start
-
-# 5. Quality gates
-npm run lint
-npx tsc --noEmit
+cp .env.example .env.local      # then paste your two keys (both optional)
+npm run dev                     # → http://localhost:3000
 ```
 
-### Demo-safe fallback
+The app runs with **no keys** — you just get the offline/demo states. Add keys
+to `.env.local` to light up live search, live stats, and live AI. Both keys are
+server-side only; see [`.env.example`](.env.example).
 
-If `OPENROUTER_API_KEY` is missing, `/api/chat` automatically streams a
-believable canned analyst response in the v6 UI-message-stream protocol — the
-demo never breaks live on stage.
-
----
-
-## Mock intelligence engine
-
-`lib/mock-engine.ts` is a deterministic financial-physics model. Inputs
-(age, injury severity, contract duration, salary exposure) feed:
-
-- **Career Stability Score** (0–100, color-tiered)
-- **Collapse probability** (request-time)
-- **Wealth trajectory** vs. cohort baseline vs. collapse scenario
-- **Risk radar** across 6 vectors
-- **Five risk dials** (Career / Injury / Behavioral / Compression / Retirement)
-- **Engine insights** + flash flags + cohort percentile
-
-The engine produces consistent, demo-stable numbers — no API surprises.
-
----
-
-## Deploy to Vercel
+### Other scripts
 
 ```bash
-# One-time
+npm test          # vitest run (38 tests)
+npm run lint      # eslint
+npm run build     # production build (succeeds without keys)
+npm start         # serve the production build
+```
+
+---
+
+## Deploy (Vercel)
+
+Vercel is the intended target (awaits a one-time owner login).
+
+```bash
 npm i -g vercel
-vercel login
-
-# First deployment (preview)
-vercel
-
-# Promote to production
-vercel --prod
+vercel            # preview
+vercel --prod     # production
 ```
 
-Add the env vars in **Vercel → Settings → Environment Variables**:
+Set the two server-side env vars in **Vercel → Settings → Environment
+Variables** (Production + Preview): `BALLDONTLIE_API_KEY`, `OPENROUTER_API_KEY`.
+Do **not** prefix either with `NEXT_PUBLIC_`.
 
-| Name                             | Scope                  |
-| -------------------------------- | ---------------------- |
-| `OPENROUTER_API_KEY`             | Production + Preview   |
-| `NEXT_PUBLIC_BALLDONTLIE_API_KEY`| Production + Preview   |
-
-Or sync from `.env.local`:
-
-```bash
-vercel env pull
-# review .env values, then push specific keys with:
-vercel env add OPENROUTER_API_KEY production
-vercel env add NEXT_PUBLIC_BALLDONTLIE_API_KEY production
-```
-
----
-
-## Push to GitHub
-
-```bash
-git init
-git add .
-git commit -m "Initial ATHLIX AI MVP"
-
-gh repo create athlix-ai --public --source=. --remote=origin
-git push -u origin main
-```
-
-(`gh auth login` first if you haven't authenticated the GitHub CLI.)
-
----
-
-## Hackathon submission
-
-`meta.json` is at the project root. Update `videoUrl`, `repoUrl`, and
-`deployedUrl` after recording / deploying.
-
-### Loom recording structure (suggested 2-minute cut)
-
-1. **0:00 – 0:15 — Hook.** Land on `/`. Let the ticker scroll, hover the hero.
-   Say: *"This is ATHLIX AI — the financial intelligence layer for sports."*
-2. **0:15 – 0:30 — Vision.** Read the hero: *"A new category — purpose-built
-   financial intelligence for athlete capital. We predict career collapse,
-   injury-linked earning decline, retirement liquidity failure, and contract
-   instability in one terminal."*
-3. **0:30 – 0:45 — Search → Terminal.** Click **Zion Williamson**. Pause on
-   the cinematic page transition.
-4. **0:45 – 1:15 — The "Oh sh\*t" moment.** Drag the **Injury Severity**
-   slider from 78 → 95. Show wealth trajectory collapsing live. Flip the
-   **Collapse Scenario** preset.
-5. **1:15 – 1:45 — ATHLIX Intelligence.** Open the floating chat panel.
-   Ask: *"What is the collapse probability over 36 months?"* Watch the
-   stream.
-6. **1:45 – 2:00 — Outro.** Cut back to `/dashboard` (cohort index). Say:
-   *"Five athletes on screen — \$700M+ in contract value monitored — one
-   terminal."*
-
----
-
-## Roadmap (post-hackathon)
-
-- Live data ingestion (BALLDONTLIE stats → real-time delta vs. mock baseline)
-- Per-athlete portfolio view (multi-asset wealth modelling)
-- Front-office permissioned mode (agent / FO / advisor roles)
-- Macro overlays (CBA, cap, luxury-tax sensitivity)
-- Multi-league: NFL, MLB, NHL, F1 driver finance
+The in-memory rate limiter is per-instance and resets on cold start — fine for a
+single-instance demo. For multi-instance production, swap `lib/rate-limit.ts`
+for a shared store (e.g. Upstash Redis).
 
 ---
 
 ## Not financial advice
 
-ATHLIX AI is a **research and demo platform**. All numbers in this MVP are
-synthesized from a deterministic mock engine. No betting, fantasy, or
-gambling functionality.
+ATHLIX is a research and demonstration tool. All risk figures are outputs of a
+deterministic scenario simulator over user-set inputs — scenario simulation,
+not prediction. No betting, fantasy, or gambling functionality.
 
----
-
-© 2026 Priyansh Shah · Built for hackathon submission
+© 2026 Priyansh Shah
