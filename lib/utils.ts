@@ -11,6 +11,9 @@ export function formatCurrency(value: number, opts?: { compact?: boolean }): str
       style: "currency",
       currency: "USD",
       notation: "compact",
+      // Explicit minimum keeps output stable across ICU versions
+      // (newer ICU renders $120.0M without it).
+      minimumFractionDigits: 0,
       maximumFractionDigits: 1,
     }).format(value);
   }
