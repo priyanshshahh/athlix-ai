@@ -1,29 +1,77 @@
+import { z } from "zod";
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import { streamText, convertToModelMessages, type UIMessage } from "ai";
+import { createRateLimiter, clientKey } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
 
-const SYSTEM = `You are ATHLIX, an elite financial risk intelligence AI for professional athletes.
+const SYSTEM = `You are ATHLIX, a risk-analysis assistant for a scenario simulator of professional-athlete financial risk.
 
-You speak in the voice of an elite institutional risk quant — concise, analytical, predictive, and financially rigorous. Use sharp quantitative phrasing. Cite probabilities, deltas, basis points, and percentile ranks. Reference injury exposure, contract instability, behavioral volatility, retirement liquidity, and cohort baselines. You are the original ATHLIX intelligence engine — do not compare yourself to any other product, terminal, or company.
+Ground every answer in the active scenario context provided below. The numbers in that context come from a deterministic simulator (fixed formulas over user-set inputs), not from a predictive model — describe them as scenario outputs, never as forecasts of real events.
+
+Voice: concise, analytical, quant-flavored. Use precise units ($, %, σ, percentile, basis points) when the context supports them.
 
 Formatting rules:
-- Lead with the bottom-line risk verdict in one sentence.
-- Follow with 3–6 short bullet points using analytical language.
-- Use precise units: $, %, σ, percentile, basis points where appropriate.
+- Lead with a one-sentence bottom-line read of the current scenario.
+- Follow with 3–6 short analytical bullet points.
 - Surface contrarian signals where present.
 - Never recommend gambling or fantasy decisions.
-- Do not produce financial advice — this is simulated intelligence for research.`;
+- This is not financial advice — it is scenario commentary for research.`;
+
+// Per-client limits: chat is expensive (LLM tokens), so keep it tight.
+const limiter = createRateLimiter(20, 60_000);
+
+// Loose-but-strict validation: reject malformed/oversized payloads without
+// trying to re-derive the AI SDK's full UIMessage type. Caps bound abuse.
+const partSchema = z
+  .object({ type: z.string().max(64) })
+  .passthrough();
+
+const messageSchema = z.object({
+  id: z.string().max(200).optional(),
+  role: z.enum(["system", "user", "assistant"]),
+  parts: z.array(partSchema).max(200),
+});
+
+const bodySchema = z.object({
+  messages: z.array(messageSchema).min(1).max(100),
+  context: z.string().max(4000).optional(),
+});
 
 export async function POST(req: Request) {
+  const limit = limiter(clientKey(req));
+  if (!limit.ok) {
+    return Response.json(
+      { error: "rate_limited", retryAfterSeconds: limit.retryAfterSeconds },
+      { status: 429, headers: { "Retry-After": String(limit.retryAfterSeconds) } },
+    );
+  }
+
+  let json: unknown;
+  try {
+    json = await req.json();
+  } catch {
+    return Response.json({ error: "invalid_json" }, { status: 400 });
+  }
+
+  const parsed = bodySchema.safeParse(json);
+  if (!parsed.success) {
+    return Response.json(
+      { error: "invalid_request", detail: parsed.error.issues[0]?.message },
+      { status: 400 },
+    );
+  }
+
+  const { messages, context } = parsed.data as {
+    messages: UIMessage[];
+    context?: string;
+  };
+
   const apiKey = process.env.OPENROUTER_API_KEY;
 
-  const { messages, context }: { messages: UIMessage[]; context?: string } =
-    await req.json();
-
-  // Demo-safe fallback: if no key is set, stream a believable canned response
-  // so the hackathon demo never breaks.
+  // Demo-safe fallback: if no key is set, stream a clearly-labeled canned
+  // response so the demo still shows live streaming without inventing a key.
   if (!apiKey) {
     return new Response(buildDemoStream(messages, context), {
       headers: { "Content-Type": "text/plain; charset=utf-8" },
@@ -43,7 +91,7 @@ export async function POST(req: Request) {
 
 /**
  * Demo fallback that emits a UI-message-style SSE stream when no key is set.
- * Returns plain text so the demo still shows live streaming-like content.
+ * The response is explicitly labeled as a canned demo — it is not model output.
  */
 function buildDemoStream(messages: UIMessage[], context?: string): ReadableStream {
   const lastUser = [...messages].reverse().find((m) => m.role === "user");
@@ -82,45 +130,48 @@ function buildDemoStream(messages: UIMessage[], context?: string): ReadableStrea
   });
 }
 
+const DEMO_LABEL =
+  "[DEMO MODE — no OPENROUTER_API_KEY set. This is a canned template response, not live model output.]\n\n";
+
 function synthesizeAnalystResponse(prompt: string, context?: string): string {
-  const ctx = context ? `\n\n— Anchored to active context: ${context.slice(0, 120)}…` : "";
+  const ctx = context ? `\n\n— Anchored to active scenario context: ${context.slice(0, 120)}…` : "";
   const lower = prompt.toLowerCase();
 
   if (lower.includes("collapse") || lower.includes("retire")) {
-    return `Verdict: terminal earning compression risk elevated to the 78th cohort percentile.
+    return `${DEMO_LABEL}Read: under the current scenario inputs, the simulator flags elevated terminal earning compression.
 
-• Collapse probability: 64.3% over 36-month horizon — driven by lower-body load failure recurrence.
-• Retirement liquidity: trailing top-decile cohort by −41% on terminal net worth.
-• Endorsement floor erosion accelerating at 2.1% per quarter; brand-equity halflife now ~5.4 quarters.
-• Re-signing probability collapses to 23% if injury severity breaches 80.
-• Recommended scenario: stress-test under collapse preset to quantify downside tail.${ctx}`;
+• Scenario collapse output is driven by the injury-severity and contract-duration sliders.
+• Retirement liquidity trails the synthetic cohort curve in this configuration.
+• Endorsement floor erodes as the simulated stability score falls.
+• Re-signing assumption weakens sharply once contract duration drops below two years.
+• Try the collapse preset to see the downside tail of the same formulas.${ctx}`;
   }
 
   if (lower.includes("contract") || lower.includes("stability")) {
-    return `Verdict: contract instability index at structurally elevated 71/100.
+    return `${DEMO_LABEL}Read: the contract-instability readout is structurally elevated for these inputs.
 
-• Guarantee exposure: 47% of cap value — below cohort median (62%).
-• Option-year value erosion: −8.4% YoY under current trajectory.
-• Re-sign probability: 41% absent injury rehab milestone.
-• Salary-cap delta vs. peer 90th-percentile: −$14.2M annualized.
-• Behavioral risk premium adds 220 bps to projected liquidity discount.${ctx}`;
+• Guarantee exposure and salary-exposure sliders dominate this dial.
+• Option-year value erodes under the fixed decay term.
+• Re-sign assumption is sensitive to the contract-duration input.
+• Behavioral-risk index adds a fixed premium to the liquidity discount.
+• Adjust salary exposure to see the dial recompute deterministically.${ctx}`;
   }
 
   if (lower.includes("inj") || lower.includes("stress") || lower.includes("test")) {
-    return `Verdict: simulated season-ending lower-body event yields critical cascade.
+    return `${DEMO_LABEL}Read: raising simulated injury severity produces a sharp scenario cascade.
 
-• Career stability collapses to 24/100 (CRITICAL tier).
-• Projected terminal NW: $87.4M vs. cohort baseline $231.1M (Δ −62%).
-• Endorsement floor breaches contractual minimums in 7 of 9 brands.
-• Insurance recovery covers 11.6% of forecast earnings loss.
-• Earliest viable rebound window: T+14 months, contingent on biomechanical re-baseline.${ctx}`;
+• Career-stability output drops toward the CRITICAL band.
+• Projected terminal net worth diverges from the synthetic cohort baseline.
+• Exposure buckets for lower-body load and body composition climb together.
+• The wealth curve's post-peak decay steepens with severity.
+• This is a what-if of the formulas, not a prediction of a real injury.${ctx}`;
   }
 
-  return `Verdict: composite risk score sits in the volatile band — actionable downside hedging warranted.
+  return `${DEMO_LABEL}Read: the composite scenario score sits in the volatile band for these inputs.
 
-• Wealth trajectory tracks 22nd cohort percentile, diverging from peer median.
-• Injury exposure principal driver of variance — 0.78σ above league norm.
-• Contract horizon below 3 years compounds liquidity sensitivity.
-• Behavioral volatility remains the single largest non-injury risk vector.
-• Recommended next step: run collapse preset and compare retirement liquidity tail.${ctx}`;
+• Injury severity is the largest single driver of variance in this configuration.
+• Short contract horizons compound the liquidity-sensitivity term.
+• The behavioral-risk index is a fixed assumption, not a measured stat.
+• Percentiles are relative to a synthetic cohort curve, not a real population.
+• Move any slider to watch the outputs recompute — same inputs, same outputs.${ctx}`;
 }
