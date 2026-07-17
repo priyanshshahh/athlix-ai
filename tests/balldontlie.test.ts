@@ -53,8 +53,9 @@ describe("searchPlayers", () => {
   });
 
   it("sends the Authorization header and returns player data", async () => {
-    const fetchMock = vi.fn(async () =>
-      jsonResponse({ data: [{ id: 1, first_name: "Stephen", last_name: "Curry" }] }),
+    const fetchMock = vi.fn(
+      async (_url: string | URL, _init?: RequestInit) =>
+        jsonResponse({ data: [{ id: 1, first_name: "Stephen", last_name: "Curry" }] }),
     );
     vi.stubGlobal("fetch", fetchMock);
 
@@ -64,7 +65,7 @@ describe("searchPlayers", () => {
 
     const [url, init] = fetchMock.mock.calls[0];
     expect(String(url)).toContain("search=curry");
-    expect((init as RequestInit).headers).toMatchObject({ Authorization: KEY });
+    expect(init?.headers).toMatchObject({ Authorization: KEY });
   });
 
   it("throws BdlError with the upstream status on a non-ok response", async () => {
