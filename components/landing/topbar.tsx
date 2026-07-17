@@ -63,7 +63,7 @@ export function TopBar() {
           <div className="flex items-center gap-2 rounded-md border border-amber-400/20 bg-amber-400/5 px-2.5 py-1">
             <ShieldAlert className="h-3 w-3 text-amber-300" />
             <span className="font-mono text-[10px] uppercase tracking-[0.22em] text-amber-200">
-              5 CRITICAL
+              SCENARIO SIM
             </span>
           </div>
           <div className="hidden md:flex items-center gap-2 rounded-md border border-cyan-400/20 bg-cyan-400/5 px-2.5 py-1">

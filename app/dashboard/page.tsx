@@ -22,8 +22,8 @@ export default function DashboardIndex() {
                 Active <span className="text-holographic">Risk Surface</span>
               </h1>
               <p className="mt-2 max-w-2xl text-sm text-slate-400">
-                Indexed athletes under live monitoring. Click any signature to
-                enter the dedicated risk terminal.
+                Curated analyst profiles used as scenario presets. Click any
+                signature to enter the dedicated risk terminal.
               </p>
             </div>
             <Link

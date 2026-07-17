@@ -9,9 +9,24 @@ import {
   YAxis,
 } from "recharts";
 import { simulate, defaultInputsFor } from "@/lib/scenario-engine";
+import { getPlayerBySlug } from "@/data/players";
 import { ShieldAlert, Activity, Skull } from "lucide-react";
 
-const sim = simulate("zion-williamson", defaultInputsFor("zion-williamson"));
+// Preview renders the deterministic simulator on the real Zion profile so the
+// numbers shown here match what the live terminal produces for the same inputs.
+const ZION = getPlayerBySlug("zion-williamson")!;
+const sim = simulate(ZION, defaultInputsFor(ZION));
+
+const lastPoint = sim.wealthCurve[sim.wealthCurve.length - 1];
+const cohortDeltaPct = (
+  (lastPoint.projected / lastPoint.baseline - 1) *
+  100
+).toFixed(1);
+const injuryDial = sim.dials.find((d) => d.label === "Injury Risk")?.value ?? 0;
+const retireDial =
+  sim.dials.find((d) => d.label === "Retirement Collapse")?.value ?? 0;
+const stabilityTier =
+  sim.dials.find((d) => d.label === "Career Stability")?.tier ?? "STABLE";
 
 export function DashboardPreview() {
   return (
@@ -37,7 +52,7 @@ export function DashboardPreview() {
             </span>
           </div>
           <span className="font-mono text-[10px] text-cyan-300/70 tracking-[0.22em]">
-            LIVE
+            PREVIEW
           </span>
         </div>
 
@@ -58,7 +73,7 @@ export function DashboardPreview() {
                   Δ vs. cohort
                 </div>
                 <div className="font-mono text-sm text-rose-200">
-                  −38.4%
+                  {cohortDeltaPct}%
                 </div>
               </div>
             </div>
@@ -112,7 +127,7 @@ export function DashboardPreview() {
                 / 100
               </div>
               <div className="ml-auto rounded-md border border-rose-400/40 bg-rose-400/10 px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.22em] text-rose-200">
-                CRITICAL
+                {stabilityTier}
               </div>
             </div>
             <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-white/[0.06]">
@@ -128,13 +143,13 @@ export function DashboardPreview() {
               <PreviewStat
                 icon={<Activity className="h-3.5 w-3.5 text-rose-300" />}
                 label="INJ"
-                value="78"
+                value={String(injuryDial)}
                 tone="rose"
               />
               <PreviewStat
                 icon={<Skull className="h-3.5 w-3.5 text-rose-300" />}
                 label="RET"
-                value="91%"
+                value={`${retireDial}%`}
                 tone="rose"
               />
               <PreviewStat

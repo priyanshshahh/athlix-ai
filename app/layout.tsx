@@ -13,18 +13,18 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "ATHLIX AI — The Financial Intelligence Layer For Sports",
+  title: "ATHLIX AI — Athlete Financial Risk Scenario Simulator",
   description:
-    "AI-powered athlete financial risk forecasting. Career collapse, injury-linked earning decline, retirement liquidity, and contract instability — predicted in one cinematic terminal.",
+    "A scenario simulator for athlete financial risk on real NBA data. Model career collapse, injury-linked earning decline, retirement liquidity, and contract instability with transparent, deterministic formulas — not predictions.",
   applicationName: "ATHLIX AI",
   authors: [{ name: "Priyansh Shah" }],
   keywords: [
     "athlete finance",
     "sports analytics",
-    "AI risk forecasting",
+    "risk scenario simulator",
     "career stability",
     "wealth modeling",
-    "athlete capital intelligence",
+    "NBA data",
   ],
   icons: {
     icon: "/favicon.ico",

@@ -35,10 +35,11 @@ export default function HomePage() {
             </h1>
 
             <p className="mt-6 mx-auto max-w-2xl text-base leading-relaxed text-slate-400 md:text-lg">
-              AI-powered athlete financial risk forecasting. Predict career
-              collapse, injury-linked earning decline, retirement liquidity
-              failure, and contract instability — in one
-              <span className="text-cyan-200"> cinematic terminal</span>.
+              A scenario simulator for athlete financial risk. Model career
+              collapse, injury-linked earning decline, retirement liquidity, and
+              contract instability with transparent, deterministic formulas on
+              <span className="text-cyan-200"> real NBA data</span> — not
+              predictions.
             </p>
 
             <div className="mt-10 flex justify-center">
@@ -65,11 +66,11 @@ export default function HomePage() {
             <div className="mt-6 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 font-mono text-[10px] uppercase tracking-[0.28em] text-slate-500">
               <span className="flex items-center gap-1.5">
                 <Database className="h-3 w-3 text-cyan-300" />
-                BALLDONTLIE · 540K+ players indexed
+                Live NBA player search · BALLDONTLIE
               </span>
               <span className="flex items-center gap-1.5">
                 <Hexagon className="h-3 w-3 text-violet-300" />
-                14 risk vectors · 6 wealth models
+                5 risk dials · 6 exposure vectors
               </span>
               <span className="flex items-center gap-1.5">
                 <Sparkles className="h-3 w-3 text-amber-300" />
@@ -116,9 +117,9 @@ export default function HomePage() {
             <span>© ATHLIX AI · 2026 · Founders Edition</span>
             <span className="flex items-center gap-2">
               <span className="status-dot" />
-              ENGINE ONLINE · 23ms latency · 99.992% uptime
+              Deterministic scenario engine · real NBA data via BALLDONTLIE
             </span>
-            <span>Not financial advice. Simulated intelligence.</span>
+            <span>Not financial advice. Scenario simulation, not prediction.</span>
           </div>
         </footer>
       </div>

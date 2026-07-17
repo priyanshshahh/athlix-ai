@@ -57,15 +57,15 @@ export function Ticker() {
       <div className="flex items-center gap-2 px-4 py-2 border-b border-white/5 bg-black/30">
         <span className="status-dot" />
         <span className="font-mono text-[10px] uppercase tracking-[0.32em] text-cyan-200/80">
-          ATHLIX::LIVE_FEED
+          ATHLIX::SAMPLE_TICKER
         </span>
         <span className="ml-2 flex items-center gap-1 font-mono text-[10px] text-slate-500">
           <Activity className="h-3 w-3" />
-          NBA · NFL · MLB · NHL · GLOBAL
+          Illustrative values · not a live market feed
         </span>
-        <span className="ml-auto flex items-center gap-1 font-mono text-[10px] text-rose-300">
-          <Skull className="h-3 w-3" />
-          5 CRITICAL ALERTS
+        <span className="ml-auto flex items-center gap-1 font-mono text-[10px] text-slate-500">
+          <Skull className="h-3 w-3 text-rose-300" />
+          Demo strip
         </span>
       </div>
 
