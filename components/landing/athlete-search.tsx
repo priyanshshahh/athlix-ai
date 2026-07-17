@@ -30,16 +30,18 @@ export function AthleteSearch() {
   const [offline, setOffline] = React.useState(false);
   const abortRef = React.useRef<AbortController | null>(null);
 
-  // Debounced live search against the server-side BALLDONTLIE proxy.
+  // Debounced live search against the server-side BALLDONTLIE proxy. All
+  // state writes live inside the timer callback (never synchronously in the
+  // effect body) so typing does not trigger cascading renders.
   React.useEffect(() => {
     const q = value.trim();
-    if (q.length < 2) {
-      setResults([]);
-      setLoading(false);
-      return;
-    }
-    setLoading(true);
     const t = setTimeout(async () => {
+      if (q.length < 2) {
+        setResults([]);
+        setLoading(false);
+        return;
+      }
+      setLoading(true);
       abortRef.current?.abort();
       const controller = new AbortController();
       abortRef.current = controller;

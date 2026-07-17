@@ -1,0 +1,35 @@
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Test
+        run: npm test
+
+      - name: Build
+        run: npm run build
+        env:
+          # Build must succeed without secrets — the app degrades gracefully
+          # (live search returns 503, chat serves a labeled demo stream) when
+          # these are absent. Real keys are configured in the deploy platform.
+          OPENROUTER_API_KEY: ""
+          BALLDONTLIE_API_KEY: ""
