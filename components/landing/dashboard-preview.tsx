@@ -9,6 +9,7 @@ import {
   YAxis,
 } from "recharts";
 import { simulate, defaultInputsFor } from "@/lib/scenario-engine";
+import { tierFromScore, tierStyle } from "@/lib/risk-tiers";
 import { getPlayerBySlug } from "@/data/players";
 import { ShieldAlert, Activity, Skull } from "lucide-react";
 
@@ -27,6 +28,13 @@ const retireDial =
   sim.dials.find((d) => d.label === "Retirement Collapse")?.value ?? 0;
 const stabilityTier =
   sim.dials.find((d) => d.label === "Career Stability")?.tier ?? "STABLE";
+
+// Contract exposure: genuinely computed from the same engine (the
+// "Contract instability" bucket), not a hardcoded label. Tone follows the
+// tier its inverted-severity maps to.
+const contractExposure =
+  sim.buckets.find((b) => b.category === "Contract instability")?.exposure ?? 0;
+const contractTone = tierStyle(tierFromScore(100 - contractExposure)).tone;
 
 export function DashboardPreview() {
   return (
@@ -126,7 +134,9 @@ export function DashboardPreview() {
               <div className="pb-1.5 font-mono text-xs text-slate-400">
                 / 100
               </div>
-              <div className="ml-auto rounded-md border border-rose-400/40 bg-rose-400/10 px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.22em] text-rose-200">
+              <div
+                className={`ml-auto rounded-md border px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.22em] ${tierStyle(stabilityTier).pill}`}
+              >
                 {stabilityTier}
               </div>
             </div>
@@ -155,8 +165,8 @@ export function DashboardPreview() {
               <PreviewStat
                 icon={<ShieldAlert className="h-3.5 w-3.5 text-amber-300" />}
                 label="CTR"
-                value="HIGH"
-                tone="amber"
+                value={String(contractExposure)}
+                tone={contractTone}
               />
             </div>
 

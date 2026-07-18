@@ -4,6 +4,8 @@ import { Atmosphere } from "@/components/landing/atmosphere";
 import { TopBar } from "@/components/landing/topbar";
 import { PLAYERS } from "@/data/players";
 import { formatCurrency } from "@/lib/utils";
+import { defaultTierForProfile, type RiskTier } from "@/lib/scenario-engine";
+import { tierStyle } from "@/lib/risk-tiers";
 
 export default function DashboardIndex() {
   return (
@@ -54,7 +56,7 @@ export default function DashboardIndex() {
                     <span className="rounded-md border border-cyan-400/30 bg-cyan-400/10 px-2 py-0.5 font-mono text-[9px] uppercase tracking-[0.22em] text-cyan-200">
                       {p.teamAbbr} · {p.position}
                     </span>
-                    <RiskBadge tier={p.riskTier} />
+                    <RiskBadge tier={defaultTierForProfile(p)} />
                   </div>
                   <h2 className="mt-3 text-xl font-semibold text-slate-100">
                     {p.name}
@@ -86,18 +88,10 @@ export default function DashboardIndex() {
   );
 }
 
-function RiskBadge({ tier }: { tier: string }) {
-  const cls =
-    tier === "CRITICAL"
-      ? "border-rose-400/40 bg-rose-400/10 text-rose-200"
-      : tier === "VOLATILE"
-      ? "border-amber-400/40 bg-amber-400/10 text-amber-200"
-      : tier === "ELEVATED"
-      ? "border-cyan-400/40 bg-cyan-400/10 text-cyan-200"
-      : "border-emerald-400/40 bg-emerald-400/10 text-emerald-200";
+function RiskBadge({ tier }: { tier: RiskTier }) {
   return (
     <span
-      className={`rounded-md border px-2 py-0.5 font-mono text-[9px] uppercase tracking-[0.22em] ${cls}`}
+      className={`rounded-md border px-2 py-0.5 font-mono text-[9px] uppercase tracking-[0.22em] ${tierStyle(tier).pill}`}
     >
       {tier}
     </span>

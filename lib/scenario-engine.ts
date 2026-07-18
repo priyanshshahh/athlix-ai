@@ -1,4 +1,7 @@
 import { clamp } from "./utils";
+import { tierFromScore, type RiskTier } from "./risk-tiers";
+
+export type { RiskTier } from "./risk-tiers";
 
 /**
  * Deterministic scenario simulator.
@@ -15,7 +18,7 @@ export type RiskDial = {
   label: string;
   value: number;
   delta: number;
-  tier: "STABLE" | "ELEVATED" | "VOLATILE" | "CRITICAL";
+  tier: RiskTier;
 };
 
 export type WealthPoint = {
@@ -88,13 +91,6 @@ export type SimulationOutput = {
   insights: string[];
   flashFlags: string[];
   cohortPercentile: number;
-};
-
-const tierFromScore = (score: number): RiskDial["tier"] => {
-  if (score < 35) return "CRITICAL";
-  if (score < 55) return "VOLATILE";
-  if (score < 75) return "ELEVATED";
-  return "STABLE";
 };
 
 export function simulate(
@@ -353,4 +349,17 @@ export function defaultInputsFor(
       Math.round((p.baseSalaryUsd / p.estContractValueUsd) * 100 * 4),
     ),
   };
+}
+
+/**
+ * The DYNAMIC tier a profile resolves to under its default slider inputs —
+ * i.e. exactly what the player's terminal shows on first load. Landing,
+ * cohort index and search all use this instead of the stored `riskTier`, so
+ * a player never displays two different tiers across the app. See
+ * lib/risk-tiers.ts for the static-vs-dynamic contract.
+ */
+export function defaultTierForProfile(
+  profile: Partial<ScenarioProfile>,
+): RiskTier {
+  return tierFromScore(simulate(profile, defaultInputsFor(profile)).stabilityScore);
 }

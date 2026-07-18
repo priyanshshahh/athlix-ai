@@ -33,6 +33,7 @@ import { RiskRadar } from "@/components/charts/risk-radar";
 import { ChatPanel } from "@/components/ai/chat-panel";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { formatCurrency } from "@/lib/utils";
+import { tierStyle } from "@/lib/risk-tiers";
 
 export function DashboardShell({
   player,
@@ -197,6 +198,10 @@ export function DashboardShell({
                     </span>
                   </div>
                 </div>
+                {/* Bucket bars use an exposure-magnitude scale (higher = worse),
+                    which is deliberately NOT the 4-way risk-tier system in
+                    lib/risk-tiers.ts — a bucket exposure isn't a stability
+                    score, so its colour cut-points (70/45) are their own thing. */}
                 <div className="space-y-3 p-5">
                   {sim.buckets.map((b, i) => (
                     <div key={b.category}>
@@ -359,15 +364,7 @@ export function DashboardShell({
                         key={d.label}
                         label={d.label}
                         value={`${d.value} (${d.tier})`}
-                        tone={
-                          d.tier === "CRITICAL"
-                            ? "rose"
-                            : d.tier === "VOLATILE"
-                            ? "amber"
-                            : d.tier === "ELEVATED"
-                            ? "cyan"
-                            : "emerald"
-                        }
+                        tone={tierStyle(d.tier).tone}
                       />
                     ))}
                   </TabsContent>

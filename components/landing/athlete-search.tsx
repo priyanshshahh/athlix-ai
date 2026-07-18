@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Search, Sparkles, ArrowRight, Loader2, WifiOff } from "lucide-react";
 import { PLAYERS, SUGGESTED_SLUGS } from "@/data/players";
+import { defaultTierForProfile, type RiskTier } from "@/lib/scenario-engine";
+import { tierStyle } from "@/lib/risk-tiers";
 
 export type SearchResult = {
   id: number;
@@ -14,9 +16,12 @@ export type SearchResult = {
   team: { id: number; abbreviation: string; fullName: string } | null;
 };
 
-const SUGGESTED = SUGGESTED_SLUGS.map((s) => PLAYERS.find((p) => p.slug === s)!).filter(
-  Boolean,
-);
+// Precompute the DYNAMIC default-input tier for each curated profile so the
+// pill here matches the tier the player's terminal shows on load, rather than
+// the stale hand-set `riskTier` field. See lib/risk-tiers.ts.
+const SUGGESTED = SUGGESTED_SLUGS.map((s) => PLAYERS.find((p) => p.slug === s)!)
+  .filter(Boolean)
+  .map((p) => ({ profile: p, tier: defaultTierForProfile(p) }));
 
 const DEBOUNCE_MS = 250;
 
@@ -79,7 +84,7 @@ export function AthleteSearch() {
     if (results[0]) {
       go(`/dashboard/${results[0].slug}?bdl=${results[0].id}`);
     } else if (!value.trim() && SUGGESTED[0]) {
-      go(`/dashboard/${SUGGESTED[0].slug}`);
+      go(`/dashboard/${SUGGESTED[0].profile.slug}`);
     }
   };
 
@@ -164,7 +169,7 @@ export function AthleteSearch() {
 
             <div className="grid gap-1">
               {!showLive &&
-                SUGGESTED.map((p) => (
+                SUGGESTED.map(({ profile: p, tier }) => (
                   <button
                     key={p.slug}
                     type="button"
@@ -188,7 +193,7 @@ export function AthleteSearch() {
                         {p.team} · curated profile
                       </div>
                     </div>
-                    <RiskPill tier={p.riskTier} />
+                    <RiskPill tier={tier} />
                     <ArrowRight className="h-4 w-4 text-slate-500 group-hover:text-cyan-300 transition" />
                   </button>
                 ))}
@@ -238,18 +243,10 @@ export function AthleteSearch() {
   );
 }
 
-function RiskPill({ tier }: { tier: string }) {
-  const color =
-    tier === "CRITICAL"
-      ? "text-rose-200 border-rose-400/40 bg-rose-400/10"
-      : tier === "VOLATILE"
-      ? "text-amber-200 border-amber-400/40 bg-amber-400/10"
-      : tier === "ELEVATED"
-      ? "text-cyan-200 border-cyan-400/40 bg-cyan-400/10"
-      : "text-emerald-200 border-emerald-400/40 bg-emerald-400/10";
+function RiskPill({ tier }: { tier: RiskTier }) {
   return (
     <span
-      className={`rounded-md border px-2 py-0.5 font-mono text-[9px] uppercase tracking-[0.22em] ${color}`}
+      className={`rounded-md border px-2 py-0.5 font-mono text-[9px] uppercase tracking-[0.22em] ${tierStyle(tier).pill}`}
     >
       {tier}
     </span>

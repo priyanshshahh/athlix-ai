@@ -2,32 +2,10 @@
 
 import { motion } from "framer-motion";
 import type { RiskDial } from "@/lib/scenario-engine";
-
-const TIER_COLORS: Record<RiskDial["tier"], { bar: string; text: string; border: string }> = {
-  STABLE: {
-    bar: "from-emerald-400 to-teal-400",
-    text: "text-emerald-200",
-    border: "border-emerald-400/40",
-  },
-  ELEVATED: {
-    bar: "from-cyan-400 to-sky-400",
-    text: "text-cyan-200",
-    border: "border-cyan-400/40",
-  },
-  VOLATILE: {
-    bar: "from-amber-400 to-orange-400",
-    text: "text-amber-200",
-    border: "border-amber-400/40",
-  },
-  CRITICAL: {
-    bar: "from-rose-400 to-red-500",
-    text: "text-rose-200",
-    border: "border-rose-400/40",
-  },
-};
+import { tierStyle } from "@/lib/risk-tiers";
 
 export function RiskDialCard({ dial, index = 0 }: { dial: RiskDial; index?: number }) {
-  const t = TIER_COLORS[dial.tier];
+  const t = tierStyle(dial.tier);
   return (
     <motion.div
       initial={{ opacity: 0, y: 14 }}
@@ -40,14 +18,14 @@ export function RiskDialCard({ dial, index = 0 }: { dial: RiskDial; index?: numb
           {dial.label}
         </span>
         <span
-          className={`rounded-md border px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.22em] ${t.text} ${t.border} bg-white/[0.03]`}
+          className={`rounded-md border px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.22em] ${t.textSoft} ${t.border} bg-white/[0.03]`}
         >
           {dial.tier}
         </span>
       </div>
       <div className="mt-3 flex items-end gap-2">
         <div
-          className={`text-3xl font-semibold tabular-nums leading-none ${t.text}`}
+          className={`text-3xl font-semibold tabular-nums leading-none ${t.textSoft}`}
           style={{ textShadow: "0 0 18px currentColor" }}
         >
           {dial.value}
