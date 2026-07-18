@@ -121,11 +121,17 @@ export function AthleteSearch() {
         >
           <Search className="h-5 w-5 text-cyan-300" />
           <input
+            type="search"
+            inputMode="search"
+            enterKeyHint="search"
+            autoComplete="off"
+            autoCorrect="off"
+            spellCheck={false}
             value={value}
             onChange={(e) => setValue(e.target.value)}
             onFocus={() => setFocused(true)}
             onBlur={() => setTimeout(() => setFocused(false), 120)}
-            placeholder="Search any NBA player · e.g. Stephen Curry"
+            placeholder="Search any NBA player, e.g. Stephen Curry…"
             className="flex-1 bg-transparent text-lg font-mono tracking-wide text-slate-100 placeholder:text-slate-500 focus:outline-none"
             aria-label="Search athlete"
           />
@@ -158,6 +164,7 @@ export function AthleteSearch() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -6 }}
             transition={{ duration: 0.2 }}
+            aria-live="polite"
             className="absolute z-30 mt-2 w-full glass-card-strong p-2"
           >
             <div className="px-3 pt-2 pb-1 font-mono text-[10px] uppercase tracking-[0.28em] text-cyan-300/70 flex items-center justify-between">
