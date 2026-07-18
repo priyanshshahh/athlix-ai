@@ -53,9 +53,8 @@ describe("searchPlayers", () => {
   });
 
   it("sends the Authorization header and returns player data", async () => {
-    const fetchMock = vi.fn(
-      async (_url: string | URL, _init?: RequestInit) =>
-        jsonResponse({ data: [{ id: 1, first_name: "Stephen", last_name: "Curry" }] }),
+    const fetchMock = vi.fn(async () =>
+      jsonResponse({ data: [{ id: 1, first_name: "Stephen", last_name: "Curry" }] }),
     );
     vi.stubGlobal("fetch", fetchMock);
 
