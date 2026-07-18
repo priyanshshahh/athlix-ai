@@ -1,0 +1,271 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`scenario engine — characterization (locks current formula outputs) > Zion Williamson at his default inputs 1`] = `
+{
+  "buckets": [
+    {
+      "baseline": 38,
+      "category": "Lower-body load",
+      "exposure": 79,
+    },
+    {
+      "baseline": 35,
+      "category": "Contract instability",
+      "exposure": 46,
+    },
+    {
+      "baseline": 32,
+      "category": "Endorsement decay",
+      "exposure": 45,
+    },
+    {
+      "baseline": 30,
+      "category": "Behavioral exposure",
+      "exposure": 38,
+    },
+    {
+      "baseline": 40,
+      "category": "Retirement liquidity",
+      "exposure": 36,
+    },
+    {
+      "baseline": 30,
+      "category": "Body composition",
+      "exposure": 64,
+    },
+  ],
+  "cohortPercentile": 35,
+  "collapseProb": 53.5,
+  "dials": [
+    {
+      "delta": 25,
+      "label": "Career Stability",
+      "tier": "ELEVATED",
+      "value": 66,
+    },
+    {
+      "delta": 0,
+      "label": "Injury Risk",
+      "tier": "CRITICAL",
+      "value": 78,
+    },
+    {
+      "delta": 2,
+      "label": "Behavioral Volatility",
+      "tier": "ELEVATED",
+      "value": 39,
+    },
+    {
+      "delta": -2,
+      "label": "Earning Compression",
+      "tier": "ELEVATED",
+      "value": 28,
+    },
+    {
+      "delta": 0,
+      "label": "Retirement Collapse",
+      "tier": "VOLATILE",
+      "value": 42,
+    },
+  ],
+  "firstWealthPoint": {
+    "age": 21,
+    "baseline": 34754620,
+    "collapse": 12242603,
+    "projected": 23194509,
+    "retirement": 1159725,
+  },
+  "lastWealthPoint": {
+    "age": 43,
+    "baseline": 836289427,
+    "collapse": 162332404,
+    "projected": 403870617,
+    "retirement": 7579786,
+  },
+  "peakNetWorth": 403870617,
+  "retirementCliffYr": 41,
+  "stabilityScore": 66,
+  "terminalNetWorth": 403870617,
+  "wealthCurveLength": 23,
+}
+`;
+
+exports[`scenario engine — characterization (locks current formula outputs) > default profile at mid-range inputs 1`] = `
+{
+  "buckets": [
+    {
+      "baseline": 38,
+      "category": "Lower-body load",
+      "exposure": 62,
+    },
+    {
+      "baseline": 35,
+      "category": "Contract instability",
+      "exposure": 55,
+    },
+    {
+      "baseline": 32,
+      "category": "Endorsement decay",
+      "exposure": 38,
+    },
+    {
+      "baseline": 30,
+      "category": "Behavioral exposure",
+      "exposure": 35,
+    },
+    {
+      "baseline": 40,
+      "category": "Retirement liquidity",
+      "exposure": 32,
+    },
+    {
+      "baseline": 30,
+      "category": "Body composition",
+      "exposure": 52,
+    },
+  ],
+  "cohortPercentile": 42,
+  "collapseProb": 45,
+  "dials": [
+    {
+      "delta": 10,
+      "label": "Career Stability",
+      "tier": "ELEVATED",
+      "value": 70,
+    },
+    {
+      "delta": 5,
+      "label": "Injury Risk",
+      "tier": "VOLATILE",
+      "value": 61,
+    },
+    {
+      "delta": -1,
+      "label": "Behavioral Volatility",
+      "tier": "STABLE",
+      "value": 34,
+    },
+    {
+      "delta": -4,
+      "label": "Earning Compression",
+      "tier": "ELEVATED",
+      "value": 25,
+    },
+    {
+      "delta": -0,
+      "label": "Retirement Collapse",
+      "tier": "ELEVATED",
+      "value": 35,
+    },
+  ],
+  "firstWealthPoint": {
+    "age": 22,
+    "baseline": 21060254,
+    "collapse": 6039201,
+    "projected": 12039609,
+    "retirement": 601980,
+  },
+  "lastWealthPoint": {
+    "age": 44,
+    "baseline": 424166883,
+    "collapse": 88244757,
+    "projected": 245375575,
+    "retirement": 4381707,
+  },
+  "peakNetWorth": 245375575,
+  "retirementCliffYr": 41,
+  "stabilityScore": 70,
+  "terminalNetWorth": 245375575,
+  "wealthCurveLength": 23,
+}
+`;
+
+exports[`scenario engine — characterization (locks current formula outputs) > default profile under a low-risk 'blue chip' scenario 1`] = `
+{
+  "buckets": [
+    {
+      "baseline": 38,
+      "category": "Lower-body load",
+      "exposure": 22,
+    },
+    {
+      "baseline": 35,
+      "category": "Contract instability",
+      "exposure": 18,
+    },
+    {
+      "baseline": 32,
+      "category": "Endorsement decay",
+      "exposure": 29,
+    },
+    {
+      "baseline": 30,
+      "category": "Behavioral exposure",
+      "exposure": 35,
+    },
+    {
+      "baseline": 40,
+      "category": "Retirement liquidity",
+      "exposure": 13,
+    },
+    {
+      "baseline": 30,
+      "category": "Body composition",
+      "exposure": 14,
+    },
+  ],
+  "cohortPercentile": 51,
+  "collapseProb": 13.5,
+  "dials": [
+    {
+      "delta": 31,
+      "label": "Career Stability",
+      "tier": "STABLE",
+      "value": 91,
+    },
+    {
+      "delta": -16,
+      "label": "Injury Risk",
+      "tier": "STABLE",
+      "value": 17,
+    },
+    {
+      "delta": -1,
+      "label": "Behavioral Volatility",
+      "tier": "STABLE",
+      "value": 25,
+    },
+    {
+      "delta": -12,
+      "label": "Earning Compression",
+      "tier": "STABLE",
+      "value": 10,
+    },
+    {
+      "delta": -4,
+      "label": "Retirement Collapse",
+      "tier": "STABLE",
+      "value": 11,
+    },
+  ],
+  "firstWealthPoint": {
+    "age": 20,
+    "baseline": 15364373,
+    "collapse": 5493287,
+    "projected": 10961471,
+    "retirement": 548074,
+  },
+  "lastWealthPoint": {
+    "age": 42,
+    "baseline": 441663886,
+    "collapse": 96819061,
+    "projected": 312208105,
+    "retirement": 8418469,
+  },
+  "peakNetWorth": 312208105,
+  "retirementCliffYr": 41,
+  "stabilityScore": 91,
+  "terminalNetWorth": 312208105,
+  "wealthCurveLength": 23,
+}
+`;
