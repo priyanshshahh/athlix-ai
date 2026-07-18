@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowLeft, Database, Sigma, TriangleAlert } from "lucide-react";
+import { ArrowLeft, Database, Sigma, TriangleAlert, GitCompare, Waves } from "lucide-react";
 import { Atmosphere } from "@/components/landing/atmosphere";
 import { TopBar } from "@/components/landing/topbar";
 
@@ -119,6 +119,103 @@ collapseProb   = 100 - stabilityScore
               The exact weights live in{" "}
               <code className="text-cyan-200">lib/scenario-engine.ts</code>.
             </p>
+          </Section>
+
+          <Section
+            icon={<Waves className="h-4 w-4 text-cyan-300" />}
+            title="Projection band (uncertainty)"
+          >
+            <p className="text-sm text-slate-400 leading-relaxed">
+              The wealth chart shades a{" "}
+              <strong className="text-cyan-200">±band</strong> around the
+              projected path rather than drawing a single line. Credible
+              projection tools ship uncertainty, and a bare point estimate is
+              misleading — so the band makes the model&rsquo;s spread explicit.
+            </p>
+            <div className="mt-3 overflow-x-auto rounded-lg border border-white/10 bg-black/30">
+              <pre className="p-4 font-mono text-[11px] leading-relaxed text-slate-300">
+{`horizonFrac = (age - startAge) / (endAge - startAge)
+spreadFrac  = clamp(0.06
+                  + (injurySeverity/100) * 0.30
+                  + horizonFrac * 0.22, 0.06, 0.55)
+
+projectedLow  = projected * (1 - spreadFrac)
+projectedHigh = projected * (1 + spreadFrac)`}
+              </pre>
+            </div>
+            <p className="mt-3 text-sm text-slate-400 leading-relaxed">
+              The half-width widens with two things: simulated injury severity
+              (more injury → more variance) and how far out the point is (a
+              fan chart — near-term is tighter than long-range). This is a{" "}
+              <strong className="text-cyan-200">presentation heuristic</strong>{" "}
+              over the deterministic path, not a fitted confidence interval
+              from a distribution of outcomes. It communicates &ldquo;this is a
+              range, not a promise,&rdquo; without claiming a calibration it
+              doesn&rsquo;t have.
+            </p>
+          </Section>
+
+          <Section
+            icon={<GitCompare className="h-4 w-4 text-violet-300" />}
+            title="Heuristic vs. learned model"
+          >
+            <p className="text-sm text-slate-400 leading-relaxed">
+              ATHLIX is a{" "}
+              <strong className="text-cyan-200">hand-weighted heuristic</strong>,
+              not a learned model. Being precise about that gap is the honest
+              framing — here is what the reference public NBA tools actually do
+              and where this simulator sits relative to them.
+            </p>
+            <ul className="mt-3 list-disc space-y-2 pl-5 text-sm text-slate-300">
+              <li>
+                <a
+                  href="https://www.darko.app/about"
+                  className="text-cyan-200 underline-offset-2 hover:underline"
+                >
+                  DARKO
+                </a>{" "}
+                (Daily Plus-Minus) is a genuine forward projection: an
+                exponential-decay + Kalman-filter model that treats each game
+                as a noisy reading of true skill and blends it by reliability,
+                with <em>age curves built in</em>. It <em>learns</em> from
+                thousands of player-games.
+              </li>
+              <li>
+                <a
+                  href="https://dunksandthrees.com/about/epm"
+                  className="text-cyan-200 underline-offset-2 hover:underline"
+                >
+                  EPM
+                </a>{" "}
+                (Estimated Plus-Minus) is built on RAPM plus a Bayesian prior
+                from a statistical-plus-minus model, using player-tracking
+                data. It documents how each input stabilizes and frames itself
+                as <em>predictive with known uncertainty</em>.
+              </li>
+              <li>
+                <strong className="text-slate-200">What ATHLIX does:</strong>{" "}
+                the weights above (0.30 age, 0.36 injury, 0.18 contract, 0.16
+                exposure, and the dial/bucket coefficients) are{" "}
+                <em>hand-chosen</em> for internal consistency and legibility,
+                not fit to data. They encode a plausible <em>story</em> about
+                what erodes athlete wealth — injury dominates, age next — but
+                nothing in the app has ever seen a real earnings outcome.
+              </li>
+              <li>
+                <strong className="text-slate-200">
+                  What would make it a learned model:
+                </strong>{" "}
+                a labeled dataset of athlete career + earnings outcomes, a
+                train/validate/test split, and fit coefficients replacing the
+                hand-chosen ones — with the residuals of the fit giving a{" "}
+                <em>real</em> confidence interval in place of the presentation
+                band above. A{" "}
+                <strong className="text-slate-200">backtest</strong>{" "}
+                is the first step toward that: it measures whether the current
+                hand-picked weights actually separate real career declines from
+                non-declines.
+              </li>
+            </ul>
           </Section>
 
           <div className="mt-8 rounded-lg border border-white/10 bg-white/[0.03] p-4 text-xs leading-relaxed text-slate-400">
