@@ -21,9 +21,14 @@ export function WealthChart({
   data: WealthPoint[];
   retirementCliffYr: number;
 }) {
+  // Recharts draws a range band when a series value is a [low, high] tuple.
+  const banded = data.map((d) => ({
+    ...d,
+    projectedBand: [d.projectedLow, d.projectedHigh] as [number, number],
+  }));
   return (
     <ResponsiveContainer width="100%" height={350}>
-      <AreaChart data={data} margin={{ top: 10, right: 16, left: 0, bottom: 0 }}>
+      <AreaChart data={banded} margin={{ top: 10, right: 16, left: 0, bottom: 0 }}>
         <defs>
           <linearGradient id="grad-projected" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stopColor="#22d3ee" stopOpacity={0.7} />
@@ -108,6 +113,18 @@ export function WealthChart({
           fill="url(#grad-collapse)"
           isAnimationActive
           animationDuration={650}
+        />
+        <Area
+          type="monotone"
+          name="Projection band"
+          dataKey="projectedBand"
+          stroke="none"
+          fill="#22d3ee"
+          fillOpacity={0.14}
+          isAnimationActive
+          animationDuration={650}
+          legendType="none"
+          activeDot={false}
         />
         <Area
           type="monotone"

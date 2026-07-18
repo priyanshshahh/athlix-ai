@@ -10,6 +10,8 @@ import { formatCurrency } from "@/lib/utils";
 type Payload = {
   baseline?: number;
   projected?: number;
+  projectedLow?: number;
+  projectedHigh?: number;
   collapse?: number;
   retirement?: number;
 };
@@ -24,6 +26,8 @@ export function RiskTooltip(props: TooltipContentProps<ValueType, NameType>) {
 
   const p = (payload[0]?.payload ?? {}) as Payload;
   const projected = p.projected ?? 0;
+  const projectedLow = p.projectedLow ?? projected;
+  const projectedHigh = p.projectedHigh ?? projected;
   const baseline = p.baseline ?? 0;
   const collapse = p.collapse ?? 0;
   const retirement = p.retirement ?? 0;
@@ -43,6 +47,11 @@ export function RiskTooltip(props: TooltipContentProps<ValueType, NameType>) {
         <Row
           label="Projected wealth"
           value={formatCurrency(projected, { compact: true })}
+          tone="cyan"
+        />
+        <Row
+          label="Projection band"
+          value={`${formatCurrency(projectedLow, { compact: true })} – ${formatCurrency(projectedHigh, { compact: true })}`}
           tone="cyan"
         />
         <Row

@@ -25,6 +25,10 @@ export type WealthPoint = {
   age: number;
   baseline: number;
   projected: number;
+  /** Lower edge of the projection band (see spread heuristic in simulate()). */
+  projectedLow: number;
+  /** Upper edge of the projection band. */
+  projectedHigh: number;
   collapse: number;
   retirement: number;
 };
@@ -161,10 +165,21 @@ export function simulate(
     const retirementIncome =
       cumulative * 0.05 * (1 - retireMod * (0.6 + inj * 0.25));
 
+    // Projection band: a documented ±spread around the projected path. The
+    // half-width widens with (a) simulated injury severity and (b) how far
+    // out the horizon is — the standard "fan chart" intuition that near-term
+    // points are tighter than long-range ones. This is a PRESENTATION spread
+    // over the deterministic path, not a fitted confidence interval. Method
+    // is documented on /methodology.
+    const horizonFrac = (a - startAge) / Math.max(1, endAge - startAge);
+    const spreadFrac = clamp(0.06 + inj * 0.3 + horizonFrac * 0.22, 0.06, 0.55);
+
     career.push({
       age: a,
       baseline: Math.round(cumulativeBaseline),
       projected: Math.round(cumulative),
+      projectedLow: Math.round(cumulative * (1 - spreadFrac)),
+      projectedHigh: Math.round(cumulative * (1 + spreadFrac)),
       collapse: Math.round(cumulativeCollapse),
       retirement: Math.round(retirementIncome),
     });
