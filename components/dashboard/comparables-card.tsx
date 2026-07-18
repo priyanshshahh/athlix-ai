@@ -85,7 +85,7 @@ export function ComparablesCard({
             >
               {source.label}
             </a>{" "}
-            · snapshot {source.snapshotDate}
+            · {source.coverage} · snapshot {source.snapshotDate}
           </div>
         </div>
       )}

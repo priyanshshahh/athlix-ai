@@ -118,9 +118,12 @@ sequenceDiagram
 ```
 
 Key details:
-- The rate limiter key is `clientKey(req)` — first entry of `X-Forwarded-For`,
-  falling back to `X-Real-IP`, falling back to the literal string
-  `"anonymous"`. See `docs/CODE-AUDIT.md` for why this is spoofable.
+- The rate limiter key is `clientKey(req)`. It does **not** trust the
+  client-settable leftmost `X-Forwarded-For` entry: set `TRUSTED_PROXY_HOPS`
+  to the number of trusted proxy/edge hops and it reads the Nth-from-the-right
+  verified entry (`chain[length - N]`); otherwise it prefers `X-Real-IP`, then
+  a composite of the rightmost hop + a User-Agent fragment, then `"anonymous"`.
+  See `docs/CODE-AUDIT.md` for the residual origin-bypass limitation.
 - Rate limiting and the `isConfigured()` check happen in that order — a
   client that floods the endpoint gets 429s even with no key configured.
 - The search route always slugifies names with `slugify()` from `lib/utils.ts`
@@ -395,7 +398,8 @@ worth flagging even though it currently works.
 | No `NEXT_PUBLIC_*` vars | intentional — nothing secret is bundled to the client | repo-wide |
 | Search rate limit | 30 requests / 60,000ms per `clientKey()` | `app/api/players/search/route.ts` |
 | Chat rate limit | 20 requests / 60,000ms per `clientKey()` | `app/api/chat/route.ts` |
-| Rate-limiter key extraction | first `X-Forwarded-For` entry → `X-Real-IP` → `"anonymous"` | `lib/rate-limit.ts` |
+| Rate-limiter key extraction | `TRUSTED_PROXY_HOPS`-verified XFF entry (`chain[length-N]`) → `X-Real-IP` → composite (rightmost hop + UA) → `"anonymous"` | `lib/rate-limit.ts` |
+| Trusted proxy hops | `TRUSTED_PROXY_HOPS` (0/unset = don't trust XFF) | `lib/rate-limit.ts`, `.env.example` |
 | Rate-limiter memory bound | drops oldest tracked key past 5,000 keys (`MAX_TRACKED_KEYS`) | `lib/rate-limit.ts` |
 | BALLDONTLIE fetch cache | `next: { revalidate: 300 }` (5 min) on every `bdlFetch` call | `lib/balldontlie.ts` |
 | Route runtime | `export const runtime = "nodejs"` on both API routes | `app/api/players/search/route.ts`, `app/api/chat/route.ts` |
@@ -420,7 +424,7 @@ worth flagging even though it currently works.
 | `tests/balldontlie.test.ts` | 8 | `isConfigured` toggle, `currentSeason` month-boundary logic (Oct cutoff), `searchPlayers` short-circuit (<2 chars, no fetch), Authorization header + query serialization, `BdlError` on non-ok response and on missing key, `getRecentTeamGames` Final-only filter + newest-first sort |
 | `tests/search-route.test.ts` | 4 | 503 when unkeyed, 400 on short query, happy-path mapping/slugify, 429 after 31 requests from one IP |
 | `tests/chat-route.test.ts` | 5 | 400 on non-JSON body, 400 on empty `messages`, 400 on invalid `role`, labeled demo stream reassembly when unkeyed, 429 after 21 requests from one IP |
-| `tests/rate-limit.test.ts` | 8 | Allow-up-to-limit, block-over-limit, remaining-budget accounting, sliding-window expiry, per-key isolation, `clientKey` header precedence (XFF first entry → X-Real-IP → "anonymous") |
+| `tests/rate-limit.test.ts` | 11 | Allow-up-to-limit, block-over-limit, remaining-budget accounting, sliding-window expiry, per-key isolation, `clientKey` trusted-hop resolution (`chain[length-N]`, forged-prefix ignored, two-hop, clamp, X-Real-IP, composite fallback, anonymous) |
 | `tests/utils.test.ts` | 7 | `slugify` (lowercasing, punctuation stripping, whitespace collapsing), `clamp` bounds, `formatCurrency` compact/full, `formatPct` |
 
 Each API-route test uses a distinct source IP per test case specifically to

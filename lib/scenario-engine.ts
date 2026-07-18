@@ -291,25 +291,17 @@ export function simulate(
     },
   ];
 
-  // Insights
+  // Insights — tier band comes from the single shared threshold table so the
+  // prose can never disagree with the dials/colours.
   const insights: string[] = [];
-  if (stabilityScore < 35) {
-    insights.push(
-      `Career stability rated CRITICAL (${stabilityScore}/100) under current scenario inputs. Simulated injury load accelerates wealth decay.`,
-    );
-  } else if (stabilityScore < 55) {
-    insights.push(
-      `Stability profile VOLATILE (${stabilityScore}/100). Scenario yields a high-beta wealth trajectory with bifurcated outcomes.`,
-    );
-  } else if (stabilityScore < 75) {
-    insights.push(
-      `Stability profile ELEVATED (${stabilityScore}/100). Manageable downside but structural inflection points present in this scenario.`,
-    );
-  } else {
-    insights.push(
-      `Stability profile STABLE (${stabilityScore}/100). Simulated wealth trajectory tracks cohort top quartile.`,
-    );
-  }
+  const stabilityTier = tierFromScore(stabilityScore);
+  const insightByTier: Record<RiskTier, string> = {
+    CRITICAL: `Career stability rated CRITICAL (${stabilityScore}/100) under current scenario inputs. Simulated injury load accelerates wealth decay.`,
+    VOLATILE: `Stability profile VOLATILE (${stabilityScore}/100). Scenario yields a high-beta wealth trajectory with bifurcated outcomes.`,
+    ELEVATED: `Stability profile ELEVATED (${stabilityScore}/100). Manageable downside but structural inflection points present in this scenario.`,
+    STABLE: `Stability profile STABLE (${stabilityScore}/100). Simulated wealth trajectory tracks cohort top quartile.`,
+  };
+  insights.push(insightByTier[stabilityTier]);
 
   if (inj > 0.65) {
     insights.push(
