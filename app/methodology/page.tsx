@@ -209,11 +209,16 @@ projectedHigh = projected * (1 + spreadFrac)`}
                 train/validate/test split, and fit coefficients replacing the
                 hand-chosen ones — with the residuals of the fit giving a{" "}
                 <em>real</em> confidence interval in place of the presentation
-                band above. A{" "}
-                <strong className="text-slate-200">backtest</strong>{" "}
+                band above. The{" "}
+                <Link
+                  href="/backtest"
+                  className="text-cyan-200 underline-offset-2 hover:underline"
+                >
+                  backtest
+                </Link>{" "}
                 is the first step toward that: it measures whether the current
                 hand-picked weights actually separate real career declines from
-                non-declines.
+                non-declines (spoiler: real but small lift).
               </li>
             </ul>
           </Section>
