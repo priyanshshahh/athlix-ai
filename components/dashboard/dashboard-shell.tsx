@@ -35,7 +35,21 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { formatCurrency } from "@/lib/utils";
 import { tierStyle } from "@/lib/risk-tiers";
 
-export function DashboardShell({
+/**
+ * Public entry point. Keys the interactive shell by the player slug so all
+ * local simulator state (inputs, sim, aiContext) resets when the player
+ * changes — explicitly and locally, rather than relying on the pathname-keyed
+ * remount in app/template.tsx. This keeps the reset correct even under a
+ * future client-side soft-navigation between two player dashboards.
+ */
+export function DashboardShell(props: {
+  player: PlayerProfile;
+  live?: LiveStats | null;
+}) {
+  return <DashboardShellInner key={props.player.slug} {...props} />;
+}
+
+function DashboardShellInner({
   player,
   live = null,
 }: {

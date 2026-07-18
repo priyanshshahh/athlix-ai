@@ -2,9 +2,9 @@
   "title": "ATHLIX AI",
   "description": "An athlete financial-risk scenario simulator for professional athletes. Deterministic what-if modeling of injury-linked earning decline, contract instability, and retirement liquidity on real NBA data (BALLDONTLIE), with AI scenario commentary. Scenario simulation, not prediction.",
   "displayName": "Priyansh Shah",
-  "videoUrl": "LOOM_LINK_HERE",
+  "videoUrl": "",
   "repoUrl": "https://github.com/priyanshshahh/athlix-ai",
-  "deployedUrl": "DEPLOY_URL_HERE",
+  "deployedUrl": "",
   "tags": [
     "sports",
     "finance",

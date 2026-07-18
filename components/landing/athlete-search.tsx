@@ -3,7 +3,7 @@
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, Sparkles, ArrowRight, Loader2, WifiOff } from "lucide-react";
+import { Search, Sparkles, ArrowRight, Loader2, WifiOff, Timer } from "lucide-react";
 import { PLAYERS, SUGGESTED_SLUGS } from "@/data/players";
 import { defaultTierForProfile, type RiskTier } from "@/lib/scenario-engine";
 import { tierStyle } from "@/lib/risk-tiers";
@@ -33,6 +33,7 @@ export function AthleteSearch() {
   const [results, setResults] = React.useState<SearchResult[]>([]);
   const [loading, setLoading] = React.useState(false);
   const [offline, setOffline] = React.useState(false);
+  const [retryAfter, setRetryAfter] = React.useState<number | null>(null);
   const abortRef = React.useRef<AbortController | null>(null);
 
   // Debounced live search against the server-side BALLDONTLIE proxy. All
@@ -59,12 +60,20 @@ export function AthleteSearch() {
           setResults([]);
           return;
         }
+        if (res.status === 429) {
+          // Surface the server's Retry-After instead of a blank "no matches".
+          const secs = Number(res.headers.get("Retry-After"));
+          setRetryAfter(Number.isFinite(secs) && secs > 0 ? secs : 60);
+          setResults([]);
+          return;
+        }
         if (!res.ok) {
           setResults([]);
           return;
         }
         const body = (await res.json()) as { data: SearchResult[] };
         setOffline(false);
+        setRetryAfter(null);
         setResults(body.data);
       } catch {
         // aborted or network error — keep previous state
@@ -167,6 +176,13 @@ export function AthleteSearch() {
               </div>
             )}
 
+            {retryAfter !== null && showLive && (
+              <div className="flex items-center gap-2 rounded-lg px-3 py-2.5 text-xs text-amber-200">
+                <Timer className="h-3.5 w-3.5" />
+                Search rate limit reached — try again in ~{retryAfter}s.
+              </div>
+            )}
+
             <div className="grid gap-1">
               {!showLive &&
                 SUGGESTED.map(({ profile: p, tier }) => (
@@ -229,7 +245,7 @@ export function AthleteSearch() {
                   </button>
                 ))}
 
-              {showLive && !loading && !offline && results.length === 0 && (
+              {showLive && !loading && !offline && retryAfter === null && results.length === 0 && (
                 <div className="px-3 py-3 text-sm text-slate-400">
                   No NBA players match{" "}
                   <span className="text-cyan-200 font-mono">&quot;{value}&quot;</span>.
