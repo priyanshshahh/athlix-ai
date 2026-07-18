@@ -26,7 +26,9 @@ import type { LiveStats } from "@/lib/live-stats";
 import { PlayerHero } from "@/components/dashboard/player-hero";
 import { LiveStatsCard } from "@/components/dashboard/live-stats-card";
 import { ContractCard, type SalarySource } from "@/components/dashboard/contract-card";
+import { ComparablesCard, type StatsSource } from "@/components/dashboard/comparables-card";
 import type { SalaryRecord } from "@/lib/salary-data";
+import type { PlayerSeason, Comparable } from "@/lib/player-stats";
 import { StabilityScore } from "@/components/dashboard/stability-score";
 import { RiskDialCard } from "@/components/dashboard/risk-dial-card";
 import { Simulator } from "@/components/dashboard/simulator";
@@ -50,6 +52,9 @@ type DashboardShellProps = {
   salary?: SalaryRecord | null;
   salarySource?: SalarySource;
   financialsNote?: string;
+  statsQuery?: PlayerSeason | null;
+  comparables?: Comparable[];
+  statsSource?: StatsSource;
 };
 
 export function DashboardShell(props: DashboardShellProps) {
@@ -62,6 +67,9 @@ function DashboardShellInner({
   salary = null,
   salarySource,
   financialsNote,
+  statsQuery = null,
+  comparables = [],
+  statsSource,
 }: DashboardShellProps) {
   const defaults = React.useMemo(() => defaultInputsFor(player), [player]);
   const [inputs, setInputs] = React.useState<SimulatorInputs>(defaults);
@@ -329,6 +337,20 @@ function DashboardShellInner({
                 </div>
               </div>
             </motion.div>
+
+            {statsSource && (
+              <motion.div
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3, duration: 0.45 }}
+              >
+                <ComparablesCard
+                  query={statsQuery}
+                  comparables={comparables}
+                  source={statsSource}
+                />
+              </motion.div>
+            )}
           </div>
 
           {/* RIGHT: simulator + tabs */}

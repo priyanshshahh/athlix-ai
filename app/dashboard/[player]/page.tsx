@@ -5,6 +5,7 @@ import { getPlayerBySlug, type PlayerProfile } from "@/data/players";
 import { getLiveStats, type LiveStats } from "@/lib/live-stats";
 import { currentSeason } from "@/lib/balldontlie";
 import { getSalaryRecord, SALARY_SOURCE, type SalaryRecord } from "@/lib/salary-data";
+import { getComparablesForName, STATS_SOURCE } from "@/lib/player-stats";
 
 type Params = { player: string };
 type SearchParams = { [key: string]: string | string[] | undefined };
@@ -98,6 +99,7 @@ export default async function PlayerDashboardPage({
 
   const resolvedName = curated?.name ?? live?.player?.name ?? displayNameFromSlug(slug);
   const salary = getSalaryRecord(resolvedName);
+  const { query: statsQuery, comparables } = getComparablesForName(resolvedName, 5);
 
   const player = curated ?? scenarioProfile(slug, live, salary);
 
@@ -121,6 +123,9 @@ export default async function PlayerDashboardPage({
           salary={salary}
           salarySource={SALARY_SOURCE}
           financialsNote={financialsNote}
+          statsQuery={statsQuery}
+          comparables={comparables}
+          statsSource={STATS_SOURCE}
         />
       </div>
     </div>
