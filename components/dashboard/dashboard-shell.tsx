@@ -25,6 +25,8 @@ import type { PlayerProfile } from "@/data/players";
 import type { LiveStats } from "@/lib/live-stats";
 import { PlayerHero } from "@/components/dashboard/player-hero";
 import { LiveStatsCard } from "@/components/dashboard/live-stats-card";
+import { ContractCard, type SalarySource } from "@/components/dashboard/contract-card";
+import type { SalaryRecord } from "@/lib/salary-data";
 import { StabilityScore } from "@/components/dashboard/stability-score";
 import { RiskDialCard } from "@/components/dashboard/risk-dial-card";
 import { Simulator } from "@/components/dashboard/simulator";
@@ -42,20 +44,25 @@ import { tierStyle } from "@/lib/risk-tiers";
  * remount in app/template.tsx. This keeps the reset correct even under a
  * future client-side soft-navigation between two player dashboards.
  */
-export function DashboardShell(props: {
+type DashboardShellProps = {
   player: PlayerProfile;
   live?: LiveStats | null;
-}) {
+  salary?: SalaryRecord | null;
+  salarySource?: SalarySource;
+  financialsNote?: string;
+};
+
+export function DashboardShell(props: DashboardShellProps) {
   return <DashboardShellInner key={props.player.slug} {...props} />;
 }
 
 function DashboardShellInner({
   player,
   live = null,
-}: {
-  player: PlayerProfile;
-  live?: LiveStats | null;
-}) {
+  salary = null,
+  salarySource,
+  financialsNote,
+}: DashboardShellProps) {
   const defaults = React.useMemo(() => defaultInputsFor(player), [player]);
   const [inputs, setInputs] = React.useState<SimulatorInputs>(defaults);
 
@@ -105,7 +112,7 @@ function DashboardShellInner({
           transition={{ duration: 0.5, ease: "easeOut" }}
           className="grid gap-4 lg:grid-cols-[1.7fr_1fr]"
         >
-          <PlayerHero player={player} />
+          <PlayerHero player={player} financialsNote={financialsNote} />
           <div className="glass-card-strong relative overflow-hidden">
             <div className="pointer-events-none absolute inset-0 grid-overlay-fine opacity-40" />
             <div className="pointer-events-none absolute inset-0 scanline" />
@@ -332,6 +339,8 @@ function DashboardShellInner({
             className="space-y-4"
           >
             <LiveStatsCard live={live} />
+
+            {salarySource && <ContractCard record={salary} source={salarySource} />}
 
             <Simulator inputs={inputs} setInputs={setInputs} defaults={defaults} />
 

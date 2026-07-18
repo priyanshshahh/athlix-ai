@@ -14,7 +14,13 @@ import {
 import type { PlayerProfile } from "@/data/players";
 import { formatCurrency } from "@/lib/utils";
 
-export function PlayerHero({ player }: { player: PlayerProfile }) {
+export function PlayerHero({
+  player,
+  financialsNote,
+}: {
+  player: PlayerProfile;
+  financialsNote?: string;
+}) {
   return (
     <div className="glass-card-strong relative overflow-hidden">
       <div className="pointer-events-none absolute inset-0 grid-overlay-fine opacity-40" />
@@ -108,6 +114,12 @@ export function PlayerHero({ player }: { player: PlayerProfile }) {
               tone="amber"
             />
           </div>
+
+          {financialsNote && (
+            <p className="font-mono text-[9px] uppercase tracking-[0.18em] text-slate-500 leading-relaxed">
+              {financialsNote}
+            </p>
+          )}
         </div>
       </div>
     </div>
