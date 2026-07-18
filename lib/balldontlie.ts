@@ -67,6 +67,14 @@ export function isConfigured(): boolean {
   return Boolean(process.env.BALLDONTLIE_API_KEY);
 }
 
+/**
+ * Upstream fetch timeout. A slow/hanging BALLDONTLIE response should fail
+ * fast into the app's explicit offline/null states rather than blocking the
+ * request until the platform function limit. Surfaced as a 504 BdlError so
+ * callers handle it exactly like any other upstream failure.
+ */
+const BDL_TIMEOUT_MS = 6000;
+
 async function bdlFetch<T>(
   path: string,
   params: Record<string, string | number | Array<string | number>>,
@@ -86,10 +94,19 @@ async function bdlFetch<T>(
     }
   }
 
-  const res = await fetch(url.toString(), {
-    headers: { Authorization: key },
-    next: { revalidate: revalidateSeconds },
-  });
+  let res: Response;
+  try {
+    res = await fetch(url.toString(), {
+      headers: { Authorization: key },
+      next: { revalidate: revalidateSeconds },
+      signal: AbortSignal.timeout(BDL_TIMEOUT_MS),
+    });
+  } catch (err) {
+    if (err instanceof DOMException && err.name === "TimeoutError") {
+      throw new BdlError(504, `BALLDONTLIE ${path} timed out after ${BDL_TIMEOUT_MS}ms`);
+    }
+    throw err;
+  }
 
   if (!res.ok) {
     throw new BdlError(res.status, `BALLDONTLIE ${path} -> ${res.status}`);

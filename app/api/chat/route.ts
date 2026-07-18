@@ -80,10 +80,15 @@ export async function POST(req: Request) {
 
   const openrouter = createOpenRouter({ apiKey });
 
+  // Fail fast if OpenRouter hangs. maxDuration caps the whole route; this
+  // caps the upstream model call specifically so a stalled stream aborts
+  // (surfaced as a stream error) instead of holding the connection open to
+  // the platform's hard limit. Kept under maxDuration (30s).
   const result = streamText({
     model: openrouter("deepseek/deepseek-chat"),
     messages: await convertToModelMessages(messages),
     system: context ? `${SYSTEM}\n\n=== ACTIVE CONTEXT ===\n${context}` : SYSTEM,
+    abortSignal: AbortSignal.timeout(25_000),
   });
 
   return result.toUIMessageStreamResponse();

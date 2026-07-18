@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, afterEach } from "vitest";
 import { createRateLimiter, clientKey } from "@/lib/rate-limit";
 
 describe("createRateLimiter", () => {
@@ -42,16 +42,42 @@ describe("createRateLimiter", () => {
 });
 
 describe("clientKey", () => {
-  it("prefers the first x-forwarded-for entry", () => {
+  afterEach(() => {
+    delete process.env.TRUSTED_PROXY_HOPS;
+  });
+
+  it("reads the leftmost untrusted hop when TRUSTED_PROXY_HOPS is set", () => {
+    // chain = [client, edge]; one trusted hop → client is the entry before it.
+    process.env.TRUSTED_PROXY_HOPS = "1";
     const req = new Request("http://x", {
       headers: { "x-forwarded-for": "1.2.3.4, 5.6.7.8" },
     });
-    expect(clientKey(req)).toBe("1.2.3.4");
+    expect(clientKey(req)).toBe("xff:1.2.3.4");
   });
 
-  it("falls back to x-real-ip", () => {
-    const req = new Request("http://x", { headers: { "x-real-ip": "9.9.9.9" } });
-    expect(clientKey(req)).toBe("9.9.9.9");
+  it("does NOT trust the leftmost x-forwarded-for entry without a proxy config", () => {
+    // No TRUSTED_PROXY_HOPS: the client-settable leftmost value must not win.
+    const req = new Request("http://x", {
+      headers: { "x-forwarded-for": "1.2.3.4, 5.6.7.8", "user-agent": "Mozilla/5.0" },
+    });
+    const key = clientKey(req);
+    expect(key).not.toBe("1.2.3.4");
+    expect(key.startsWith("cmp:5.6.7.8|")).toBe(true);
+  });
+
+  it("prefers a platform-set x-real-ip over an untrusted forwarded chain", () => {
+    const req = new Request("http://x", {
+      headers: { "x-forwarded-for": "1.2.3.4", "x-real-ip": "9.9.9.9" },
+    });
+    expect(clientKey(req)).toBe("rip:9.9.9.9");
+  });
+
+  it("clamps to the leftmost hop when trusted hops exceed the chain length", () => {
+    process.env.TRUSTED_PROXY_HOPS = "5";
+    const req = new Request("http://x", {
+      headers: { "x-forwarded-for": "1.2.3.4, 5.6.7.8" },
+    });
+    expect(clientKey(req)).toBe("xff:1.2.3.4");
   });
 
   it("defaults to anonymous when no ip headers are present", () => {

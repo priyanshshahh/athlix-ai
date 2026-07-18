@@ -51,9 +51,51 @@ export function createRateLimiter(limit: number, windowMs: number) {
   };
 }
 
-/** Extract a stable client key from a request (best effort behind proxies). */
+/**
+ * Extract a rate-limit key from a request.
+ *
+ * `X-Forwarded-For` is client-settable and MUST NOT be trusted blindly: its
+ * leftmost entry is whatever the client wrote, so keying on it lets an
+ * attacker mint a fresh bucket per request. Instead:
+ *
+ *  - Set `TRUSTED_PROXY_HOPS` to the number of trusted reverse proxies / edge
+ *    layers in front of this app (Vercel's edge = 1, bare origin = 0). We then
+ *    read the *leftmost untrusted hop*: the XFF entry immediately to the left
+ *    of that trusted tail — the real client as seen by the innermost proxy
+ *    we control. This is the standard leftmost-untrusted-hop convention.
+ *  - With no trusted hops configured we do not trust XFF's leftmost value at
+ *    all. We prefer a platform-set `X-Real-IP`, else fall back to a composite
+ *    of the *rightmost* XFF hop (closest to us, least attacker-controllable if
+ *    any proxy exists) plus a User-Agent fragment, so at least it isn't a
+ *    trivially-rotating fresh bucket.
+ *
+ * Residual limitation (documented in docs/CODE-AUDIT.md): a client hitting the
+ * origin directly, bypassing every trusted proxy, still controls all these
+ * headers and can rotate the key. The in-memory limiter is a demo-scale best
+ * effort, not a security boundary — for hard guarantees put a real edge/WAF
+ * limiter in front and set TRUSTED_PROXY_HOPS to match.
+ */
 export function clientKey(req: Request): string {
-  const fwd = req.headers.get("x-forwarded-for");
-  if (fwd) return fwd.split(",")[0].trim();
-  return req.headers.get("x-real-ip") ?? "anonymous";
+  const rawHops = Number.parseInt(process.env.TRUSTED_PROXY_HOPS ?? "", 10);
+  const trustedHops = Number.isFinite(rawHops) && rawHops > 0 ? rawHops : 0;
+
+  const xff = req.headers.get("x-forwarded-for");
+  const chain = xff
+    ? xff.split(",").map((s) => s.trim()).filter(Boolean)
+    : [];
+
+  if (trustedHops > 0 && chain.length > 0) {
+    const idx = Math.max(0, chain.length - 1 - trustedHops);
+    return `xff:${chain[idx]}`;
+  }
+
+  const realIp = req.headers.get("x-real-ip");
+  if (realIp) return `rip:${realIp.trim()}`;
+
+  if (chain.length > 0) {
+    const ua = req.headers.get("user-agent") ?? "ua?";
+    return `cmp:${chain[chain.length - 1]}|${ua.slice(0, 40)}`;
+  }
+
+  return "anonymous";
 }
