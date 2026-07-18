@@ -54,19 +54,21 @@ export function createRateLimiter(limit: number, windowMs: number) {
 /**
  * Extract a rate-limit key from a request.
  *
- * `X-Forwarded-For` is client-settable and MUST NOT be trusted blindly: its
- * leftmost entry is whatever the client wrote, so keying on it lets an
- * attacker mint a fresh bucket per request. Instead:
+ * `X-Forwarded-For` is client-settable and MUST NOT be trusted blindly: an
+ * attacker can prepend arbitrary entries, so keying on the leftmost value lets
+ * them mint a fresh bucket per request. Each trusted proxy in front of the app
+ * APPENDS the address it received the connection from, so those verified
+ * entries sit at the *right* end of the chain. Therefore:
  *
  *  - Set `TRUSTED_PROXY_HOPS` to the number of trusted reverse proxies / edge
- *    layers in front of this app (Vercel's edge = 1, bare origin = 0). We then
- *    read the *leftmost untrusted hop*: the XFF entry immediately to the left
- *    of that trusted tail — the real client as seen by the innermost proxy
- *    we control. This is the standard leftmost-untrusted-hop convention.
- *  - With no trusted hops configured we do not trust XFF's leftmost value at
- *    all. We prefer a platform-set `X-Real-IP`, else fall back to a composite
- *    of the *rightmost* XFF hop (closest to us, least attacker-controllable if
- *    any proxy exists) plus a User-Agent fragment, so at least it isn't a
+ *    layers in front of this app (Vercel's edge = 1, bare origin = 0). With N
+ *    trusted hops the verified client is the Nth entry from the right —
+ *    `chain[chain.length - N]`. Everything to its left is attacker-controllable
+ *    and ignored. Example: `XFF: <forged>, <realIP>` behind one trusted edge
+ *    (N=1) resolves to `<realIP>` (index length-1), never `<forged>`.
+ *  - With no trusted hops configured we do not trust XFF at all. We prefer a
+ *    platform-set `X-Real-IP`, else fall back to a composite of the *rightmost*
+ *    XFF hop (closest to us) plus a User-Agent fragment, so at least it isn't a
  *    trivially-rotating fresh bucket.
  *
  * Residual limitation (documented in docs/CODE-AUDIT.md): a client hitting the
@@ -85,7 +87,9 @@ export function clientKey(req: Request): string {
     : [];
 
   if (trustedHops > 0 && chain.length > 0) {
-    const idx = Math.max(0, chain.length - 1 - trustedHops);
+    // Nth-from-the-right verified entry; clamp to the outermost if the
+    // configured hop count exceeds the chain we actually received.
+    const idx = Math.max(0, chain.length - trustedHops);
     return `xff:${chain[idx]}`;
   }
 

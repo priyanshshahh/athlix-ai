@@ -46,13 +46,25 @@ describe("clientKey", () => {
     delete process.env.TRUSTED_PROXY_HOPS;
   });
 
-  it("reads the leftmost untrusted hop when TRUSTED_PROXY_HOPS is set", () => {
-    // chain = [client, edge]; one trusted hop → client is the entry before it.
+  it("uses the proxy-verified entry (chain.length - hops) and ignores a forged prefix", () => {
+    // One trusted edge appends the real client IP last; the attacker's forged
+    // leftmost entry must be ignored.
     process.env.TRUSTED_PROXY_HOPS = "1";
     const req = new Request("http://x", {
-      headers: { "x-forwarded-for": "1.2.3.4, 5.6.7.8" },
+      headers: { "x-forwarded-for": "6.6.6.6, 5.6.7.8" },
     });
-    expect(clientKey(req)).toBe("xff:1.2.3.4");
+    expect(clientKey(req)).toBe("xff:5.6.7.8");
+    expect(clientKey(req)).not.toBe("xff:6.6.6.6");
+  });
+
+  it("counts trusted hops from the right (two trusted edges)", () => {
+    // chain = [forged, realClient, edge1]; two trusted hops → realClient at
+    // index length-2.
+    process.env.TRUSTED_PROXY_HOPS = "2";
+    const req = new Request("http://x", {
+      headers: { "x-forwarded-for": "6.6.6.6, 5.6.7.8, 10.0.0.1" },
+    });
+    expect(clientKey(req)).toBe("xff:5.6.7.8");
   });
 
   it("does NOT trust the leftmost x-forwarded-for entry without a proxy config", () => {

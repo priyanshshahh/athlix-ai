@@ -53,8 +53,11 @@ describe("searchPlayers", () => {
   });
 
   it("sends the Authorization header and returns player data", async () => {
-    const fetchMock = vi.fn(async () =>
-      jsonResponse({ data: [{ id: 1, first_name: "Stephen", last_name: "Curry" }] }),
+    // Typed call signature so `.mock.calls[0]` destructures as [url, init]
+    // without needing named (unused) params in the implementation.
+    const fetchMock = vi.fn<(url: string | URL, init?: RequestInit) => Promise<Response>>(
+      async () =>
+        jsonResponse({ data: [{ id: 1, first_name: "Stephen", last_name: "Curry" }] }),
     );
     vi.stubGlobal("fetch", fetchMock);
 
